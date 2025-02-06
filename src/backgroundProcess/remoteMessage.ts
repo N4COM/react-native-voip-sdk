@@ -1,8 +1,8 @@
 
 import callServiceInstance from "../services/callService";
+import messaging from '@react-native-firebase/messaging';
 
-
-export default async (remoteMessage: any) => {
+const remoteMessageHandler=async (remoteMessage: any) => {
     
     const {a:additionalData,i}=await JSON.parse(remoteMessage.data.custom);
 
@@ -15,3 +15,11 @@ export default async (remoteMessage: any) => {
     return Promise.resolve();
 
 };
+
+
+const backgroundMessageHandler=async ()=>{
+    messaging().setBackgroundMessageHandler(remoteMessageHandler);
+}
+
+
+export default backgroundMessageHandler;
