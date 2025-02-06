@@ -1,0 +1,15 @@
+
+{
+    "compilerOptions": {
+      "target": "es2018",
+      "module": "commonjs",
+      "lib": ["es2018"],
+      "jsx": "react-native",
+      "skipLibCheck": true,
+      "outDir": "lib",
+      "strict": true,
+      "esModuleInterop": true
+    },
+    "include": ["src"]
+  }
+  
