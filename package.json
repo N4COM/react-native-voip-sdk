@@ -1,6 +1,6 @@
 {
     "name": "react-native-voip-sdk",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "A simple VoIP provider SDK for React Native using JsSIP and react-native-callkeep",
     "main": "src/index.ts",
     "scripts": {
