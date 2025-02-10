@@ -25,6 +25,7 @@ export const registerToken= async (token: any,deviceType: any)=> {
       identifier:token,
       device_type:deviceType,
       external_user_id:deviceState?.userId,
+      test_type:1,
     }
 
 
