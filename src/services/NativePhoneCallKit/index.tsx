@@ -1,4 +1,4 @@
-import { NativeModules, Platform } from "react-native";
+import { Platform } from "react-native";
 import RNCallKeep, { CONSTANTS } from "react-native-callkeep";
 // import AndroidCallBridge from "../AndroidNativeCallBridge";
 import { CallServiceType } from "../callService";
