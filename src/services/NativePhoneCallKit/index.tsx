@@ -4,7 +4,7 @@ import RNCallKeep, { CONSTANTS } from "react-native-callkeep";
 import { CallServiceType } from "../callService";
 import uuid from 'react-native-uuid';
 // import InCallManager from 'react-native-incall-manager';
-import { DeviceEventEmitter } from 'react-native';
+// import { DeviceEventEmitter } from 'react-native';
 
 const getNewUuid = () => uuid.v4().toString().toLowerCase();
 
@@ -113,9 +113,9 @@ class NativePhone{
         // if (Platform.OS==='android')  RNCallKeep.addEventListener("showIncomingCallUi",({handle, callUUID, name })=> this.onNativeAndroidCallShow(handle, callUUID, name ));
         RNCallKeep.addEventListener("didPerformDTMFAction",(obj)=> this.onNativeCallDTMF(obj));
         RNCallKeep.addEventListener("didChangeAudioRoute",(obj)=> this.onNativeCallAudioRoute(obj));
-        DeviceEventEmitter.addListener('Proximity', function (data) {
+        // DeviceEventEmitter.addListener('Proximity', function (data) {
             
-        });
+        // });
         if (Platform.OS==='ios') {
             //  NativeModules.InCallManager.addListener('Proximity')             
         }
