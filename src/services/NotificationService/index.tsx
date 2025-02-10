@@ -4,6 +4,7 @@ import { registerToken } from "../../API/oneSignalApi";
 import messaging from '@react-native-firebase/messaging';
 import { CallServiceType } from "../callService";
 import OneSignal from 'react-native-onesignal';
+import { Platform } from 'react-native';
 
 
 class NotificationService {
@@ -101,6 +102,10 @@ class NotificationService {
     
 
     async registerAndroid() {
+
+        if (Platform.OS !== 'android') {
+            return;
+        }
 
         console.log('====================================');
         console.log('registerAndroid');
