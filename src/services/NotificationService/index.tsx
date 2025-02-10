@@ -1,10 +1,15 @@
 // import OneSignal from "react-native-onesignal";
 import VoipPushNotification from 'react-native-voip-push-notification';
 import { registerToken } from "../../API/oneSignalApi";
-import messaging from '@react-native-firebase/messaging';
+
 import { CallServiceType } from "../callService";
 import OneSignal from 'react-native-onesignal';
 import { Platform } from 'react-native';
+
+let firebaseApp:any;
+if (Platform.OS === 'android') {
+    firebaseApp = require('@react-native-firebase/app');
+}
 
 
 class NotificationService {
@@ -111,7 +116,7 @@ class NotificationService {
         console.log('registerAndroid');
         console.log('====================================');
         try {
-            const fcmToken = await messaging().getToken();
+            const fcmToken = await firebaseApp.messaging().getToken();
             console.log({fcmToken});
             registerToken(fcmToken, 1);
         } catch (error) {
