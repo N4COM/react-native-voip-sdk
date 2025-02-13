@@ -1,10 +1,7 @@
 
 import { Platform } from "react-native";
 import callServiceInstance from "../services/callService";
-let firebaseApp:any;
-if (Platform.OS === 'android') {
-    firebaseApp = require('@react-native-firebase/app');
-}
+import messaging from '@react-native-firebase/messaging';
 
 const remoteMessageHandler=async (remoteMessage: any) => {
     
@@ -25,7 +22,7 @@ const backgroundMessageHandler=async ()=>{
     if (Platform.OS !== 'android') {
         return;
     }
-    firebaseApp.messaging().setBackgroundMessageHandler(remoteMessageHandler);
+    messaging().setBackgroundMessageHandler(remoteMessageHandler);
 }
 
 
