@@ -21,7 +21,6 @@
         "@react-native-firebase/messaging": "^21.7.1",
         "crypto-js": "^4.2.0",
         "eventemitter3": "^5.0.1",
-        "react-native":"0.74.5",
         "jssip": "https://github.com/men3malgmatti/JsSIP.git#n4com-app",
         "react-native-background-timer": "^2.4.1",
         "react-native-callkeep": "^4.3.14",
