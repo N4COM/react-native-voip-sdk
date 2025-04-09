@@ -16,7 +16,7 @@ const callOptions={
 const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefined> => {
     
     try {
-        const response= await customFetch('/users/me/webphone',{
+        const response= await customFetch('/webphone',{
             method:'GET'
         })
         if (!response.ok) {
@@ -29,10 +29,9 @@ const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefin
             password:resData.data.password,
             realm:resData.data.realm,
             userName:resData.data.username,
-            displayName:resData.data.display_name,
-            displayNumber:resData.data.display_number,
-            ownerID:resData.data.owner_id,
-            webSocket:resData.data.websocket
+            displayName:resData.data.displayName,
+            displayNumber:resData.data.displayNumber,
+            webSocket:resData.data.wssUrl
         }
         
         return{
@@ -59,7 +58,7 @@ type SoftPhoneCredentials = {
     userName: string,
     password: string,
     realm: string,
-    ownerID: string,
+    ownerID?: string,
     webSocket: string
 }
 
@@ -94,8 +93,8 @@ class SipClient {
         this.configurationParams=credentials;
         this.sipUA=ua;
         this.sipUA.registrator().setExtraContactParams({
-            'app-id': "svoolaz",
-            'pn-tok': ownerID,
+            'app-id': "alpitour",
+            'pn-tok': "push-token",
             'pn-type': "n4com"  
         });
         this.init();
