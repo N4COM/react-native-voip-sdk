@@ -22,7 +22,7 @@
   ],
     "author": "N4COM",
     "peerDependencies": {
-        "@react-native-async-storage/async-storage": "^2.1.2",
+        "@react-native-async-storage/async-storage": ">=1.0.0",
         "@react-native-firebase/app": ">=21.7.1",
         "@react-native-firebase/messaging": ">=21.7.1",
         "react": ">=18.2.0",
