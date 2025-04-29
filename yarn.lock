@@ -1360,11 +1360,6 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@config-plugins/react-native-callkeep@^9.0.0":
-  version "9.0.0"
-  resolved "https://registry.yarnpkg.com/@config-plugins/react-native-callkeep/-/react-native-callkeep-9.0.0.tgz#a9fb075c47c2eaf1ec43ca4dc29afb93b8d742a8"
-  integrity sha512-4kiZbauTLxZ1V0CJUC7anR1inaeAA0j/EX212uxDmE07qyTW9P7Rx2M3fq6JmJD32MGcg8dbWr+k0daE+TXP0Q==
-
 "@eslint-community/eslint-utils@^4.2.0", "@eslint-community/eslint-utils@^4.4.0":
   version "4.4.1"
   resolved "https://registry.yarnpkg.com/@eslint-community/eslint-utils/-/eslint-utils-4.4.1.tgz#d1145bf2c20132d6400495d6df4bf59362fd9d56"

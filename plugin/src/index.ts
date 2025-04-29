@@ -2,7 +2,7 @@ import { createRunOncePlugin, withAndroidManifest, withEntitlementsPlist } from 
 import { ExpoConfig } from "@expo/config-types";
 import { withIosAppDelegate } from "./ios";
 import { getMainApplicationOrThrow } from "@expo/config-plugins/build/android/Manifest";
-import withCallkeep from '@config-plugins/react-native-callkeep/build/withCallkeep.js';
+import withCallkeep from '../rnck/withCallkeep.js';
 
 const pak = require("react-native-voip-push-notification/package.json");
 

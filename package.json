@@ -33,7 +33,6 @@
         "react-native-webrtc": "https://github.com/nimbleape/react-native-webrtc.git#84-plus-dtmf-plus-field-trial"
     },
     "dependencies": {
-        "@config-plugins/react-native-callkeep": "^9.0.0",
         "crypto-js": "^4.2.0",
         "eventemitter3": "^5.0.1",
         "jssip": "https://github.com/men3malgmatti/JsSIP.git#n4com-app",
