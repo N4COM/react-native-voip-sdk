@@ -6,7 +6,7 @@ import uuid from 'react-native-uuid';
 import {AppState, AppStateStatus, Platform } from "react-native";
 import BackgroundTimer from 'react-native-background-timer';
 import {EventEmitter} from 'eventemitter3';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 
@@ -102,6 +102,7 @@ class CallService extends EventEmitter{
 
     public callServiceDeviceId:string|undefined
 
+
     constructor(){
         super()
         this.canCall=false
@@ -114,6 +115,29 @@ class CallService extends EventEmitter{
         console.log('callServiceInstance initiated');
         console.log('====================================');
     }
+
+
+    async init(token:string){
+        const saved=await this.saveToken(token)
+        if (!saved) {
+            return
+        }
+        this.initiateCallService()
+    }
+
+    async saveToken(token:string){
+        try {
+            await AsyncStorage.setItem('token',token)
+            return true
+        } catch (error) {
+            console.log('====================================');
+            console.log('saveToken error',error);
+            console.log('====================================');
+            return false
+        }
+    }
+    
+
 
     initiateCallService(){
         this.sipClient.registerClient()

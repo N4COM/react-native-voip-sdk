@@ -22,7 +22,7 @@ interface CallServiceContext{
     setAudioRoute:(audioRoute:string)=>Promise<void>;
     getAudioRoutes:()=>Promise<void>;
     callServiceSipInitFailed:boolean;
-    initiateCallService:()=>void;
+    initiateCallService:(token:string)=>void;
 }
 
 
@@ -107,14 +107,15 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
         await callService.setAudioRoute(audioRoute);
     }
 
-    const initiateCallService=()=>{
-        callService.initiateCallService();
+    const initiateCallService=(token:string)=>{
+        callService.init(token);
     }
 
     const stopCallService=()=>{
         callService.stopCallService();
         callService.removeSipCredentials();
     }
+
 
     useEffect(() => {
 

@@ -1,4 +1,5 @@
 import { customFetch } from "../../API/api";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import SoftPhone from "../../classes/softPhone";
 import { Call, CallServiceType } from "../callService";
 
@@ -14,10 +15,18 @@ const callOptions={
 }
 
 const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefined> => {
+
+    const token=await AsyncStorage.getItem('token')
+    if (!token) {
+        return undefined
+    }
     
     try {
-        const response= await customFetch('/webphone',{
-            method:'GET'
+        const response= await customFetch('/webphone',{ 
+            method:'GET',
+            headers:{
+                'Authorization':`Bearer ${token}`
+            }
         })
         if (!response.ok) {
             const resData = await response.json()
@@ -81,6 +90,8 @@ class SipClient {
 
     async registerClient(){
 
+
+        
         const credentials= await getSoftPhoneCredentials();
         if(!credentials){
             console.log('====================================');
@@ -94,8 +105,8 @@ class SipClient {
         this.sipUA=ua;
         this.sipUA.registrator().setExtraContactParams({
             'app-id': "alpitour",
-            'pn-tok': "push-token",
-            'pn-type': "n4com"  
+            'pn-tok': "push-token",   // TODO: change to the push token from the notification service
+             'pn-type': "n4com"  
         });
         this.init();
         this.registerEventsListeners();

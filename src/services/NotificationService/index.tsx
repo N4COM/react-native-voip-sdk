@@ -56,7 +56,7 @@ class NotificationService {
             // get the ios VOIP token and register it on the onesignal Voip app
             VoipPushNotification.addEventListener('register', (token) => {
             // --- send token to your apn provider server
-            // registerToken(token, 0);            
+             registerToken(token, 0);            
             });
             // VoipPushNotification.addEventListener('notification', (notification) => {
             //   // --- when receive remote voip push, register your VoIP client, show local notification ... etc

@@ -45,6 +45,8 @@ declare class CallService extends EventEmitter {
     sipServiceInitFailed: boolean;
     callServiceDeviceId: string | undefined;
     constructor();
+    init(token: string): Promise<void>;
+    saveToken(token: string): Promise<boolean>;
     initiateCallService(): void;
     appStateListener(): void;
     stopCallService(): void;
