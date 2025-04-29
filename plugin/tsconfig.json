@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "outDir": "build",
+    "rootDir": "src",
+    "declaration": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "skipLibCheck": true
+  },
+  "include": ["./src"]
+}
