@@ -6,8 +6,21 @@
     "types": "lib/index.d.ts",
     "scripts": {
         "build": "tsc",
-        "build:plugin": "rimraf plugin/build && tsc --build plugin"
+        "build:plugin": "rimraf plugin/build && tsc --build plugin",
+        "prepare": "npm run build && npm run build:plugin"
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/N4COM/react-native-voip-sdk.git"
+    },
+    "keywords": [
+    "react-native",
+    "voip",
+    "sip",
+    "callkeep",
+    "webrtc"
+  ],
+    "author": "N4COM",
     "peerDependencies": {
         "@react-native-async-storage/async-storage": "^2.1.2",
         "@react-native-firebase/app": ">=21.7.1",
