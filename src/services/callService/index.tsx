@@ -17,7 +17,6 @@ export const RINGING= 'ringing';
 export const ESTABLISHED= 'established';
 // @ts-expect-error TS(7016): Could not find a declaration file for module 'cryp... Remove this comment to see the full error message
 import {MD5} from 'crypto-js';
-import RNCallKeep from "react-native-callkeep";
 
 export type AudioRoute='PHONE'|'SPEAKER'|'HEADSET'|'BLUETOOTH'
 
@@ -111,9 +110,7 @@ class CallService extends EventEmitter{
         this.sipClient= new SipClient(this)
         this.notificationService= new NotificationService(this)
         this.appStateListener()    
-        console.log('====================================');
-        console.log('callServiceInstance initiated');
-        console.log('====================================');
+
     }
 
 
@@ -138,6 +135,9 @@ class CallService extends EventEmitter{
     }
     
 
+    registerPushToken(pushToken:string, platform:"a"|"i"){
+       this.sipClient.registerPushToken(pushToken,platform);
+    }
 
     initiateCallService(){
         this.sipClient.registerClient()
@@ -150,10 +150,6 @@ class CallService extends EventEmitter{
                 this.sipClient.init()
             }
             if (this.appState.match(/active/) && nextAppState === 'background') {
-                console.log('====================================');
-                console.log('appState change',this.appState,nextAppState);
-                console.log('====================================');
-                console.log('callStore',this.callStore.callUUIDMap.size);
                 this.callStore.callUUIDMap.size===0 && this.stopCallService()
             }
             this.appState = nextAppState;
@@ -175,15 +171,10 @@ class CallService extends EventEmitter{
     }
 
     callScreenDisplayed(callUUID:string,handle:string,name:string){
-        console.log('====================================');
-        console.log('callScreenDisplayed',callUUID,handle,name);
-        console.log('====================================');
+       
        
         const call=this.callStore.getCallByCallUUID(callUUID);
 
-        console.log('====================================');
-        console.log('callScreenDisplayed call',call);
-        console.log('====================================');
 
         if (call) {
             console.log('callScreenDisplayed call',call);
@@ -215,24 +206,14 @@ class CallService extends EventEmitter{
 
         this.sipClient.init()
 
-        // if (Platform.OS==='android') {
-        //     console.log('====================================');
-        //     console.log('backToForeground');
-        //     console.log('====================================');
-        //     RNCallKeep.backToForeground();
-        // }
     }
 
     onSipClientReady(){
-        console.log('====================================');
-        console.log('onSipClientReady');
-        console.log('====================================');
+
         this.canCall=true;
         this.sipServiceInitFailed=false;
         if (this.pendingOutgoingCall&& this.pendingOutgoingCallTimeout) {
-            console.log('====================================');
-            console.log('onSipClientReady pendingOutgoingCall',this.pendingOutgoingCall);
-            console.log('====================================');
+           
             this.startedCall(this.pendingOutgoingCall.handle,this.pendingOutgoingCall.callUUID,this.pendingOutgoingCall.name)
             BackgroundTimer.clearTimeout(this.pendingOutgoingCallTimeout)
             this.pendingOutgoingCall=undefined
@@ -266,14 +247,10 @@ class CallService extends EventEmitter{
 
     onIncomingSipCall(sessionEvent:any){
 
-        console.log('====================================');
-        console.log('onIncomingSipCall');
-        console.log('====================================');
+
 
         if (sessionEvent.originator === 'remote' && (!this.canCall || this.callConnectingUUID || this.callStore.callUUIDMap.size>1)) {
-            console.log('====================================');
-            console.log('onIncomingSipCall endCall',this.canCall,this.callConnectingUUID,this.callStore.callUUIDMap.size);
-            console.log('====================================');
+        
             this.sipClient.endCall(sessionEvent.request.call_id)
             return
         }
@@ -285,9 +262,7 @@ class CallService extends EventEmitter{
         let name=sessionEvent.request.from._display_name  as string;
         let handle=sessionEvent.request.from._uri._user  as string;
 
-        console.log('====================================');
-        console.log('onIncomingSipCall',callUUID,handle,name);
-        console.log('====================================');
+      
        
         if(this.pendingCall&&this.pendingCallTimeout&& this.pendingCall.callUUID===this.makeSureUUIDisUUID4(sessionEvent.request.call_id)){
             callUUID=this.pendingCall.callUUID
@@ -331,16 +306,10 @@ class CallService extends EventEmitter{
         
         isAnswered && this.sipClient.answerCall(sessionEvent.request.call_id)
         showIncomingCallScreen && this.nativePhone?.showIncomingCall(callUUID,handle,name)
-        // if (name.trim()===handle.trim()) {
-        //     this.matchContact(callUUID,handle)
-        // }
+
     }
 
     onSipCallFailed(sessionEvent:any){
-
-        console.log('====================================');
-        console.log('onSipCallFailed',sessionEvent);
-        console.log('====================================');
 
        if (sessionEvent.originator === 'local') {
             const calls= this.callStore.getAllCalls()
@@ -368,29 +337,19 @@ class CallService extends EventEmitter{
 
     onSipCallEnded(sessionEvent:any){
 
-        console.log('====================================');
-        console.log('onSipCallEnded',sessionEvent);
-        console.log('====================================');
 
         if (sessionEvent.originator === 'local') {
 
-            console.log('====================================');
-            console.log('onSipCallEnded local');
-            console.log('====================================');
 
             const calls= this.callStore.getAllCalls()
             calls.forEach((call)=>{
-                console.log('====================================');
-                console.log('onSipCallEnded local call',call);
-                console.log('====================================');
+
                 this.nativePhone?.reportCallEnded(call.callUUID,sessionEvent.cause,'local')
                 this.callStore.removeCallByCallUUID(call.callUUID)
                 this.emit('callEnded',call)
             })
 
-            console.log('====================================');
-            console.log('onSipCallEnded local callCleanUp');
-            console.log('====================================');
+
             this.callCleanUp()
 
             return; 
@@ -400,9 +359,6 @@ class CallService extends EventEmitter{
         const originator=sessionEvent.originator;
         const cause=sessionEvent.cause;
 
-        console.log('====================================');
-        console.log('onSipCallEnded call',call);
-        console.log('====================================');
       
         if (call) {
             call.endReason=cause
@@ -467,7 +423,6 @@ class CallService extends EventEmitter{
 
     onIncomingFcmCall(callUUID:string,handle:string,name:string){
 
-        console.log('onIncomingFcmCall',callUUID,handle,name);
         
         
         this.nativePhone?.showIncomingCall(callUUID,handle,name)
@@ -484,20 +439,14 @@ class CallService extends EventEmitter{
     }
 
     startedCall(handle:string,callUUID:string,name?:string){
-        console.log('====================================');
-        console.log('startedCall',handle,callUUID,name);
-        console.log('====================================');
+   
         name = name || handle
         handle= handle.replace(/[^\d+*#]/g, '')
         if (!this.canCall) {
-            console.log('====================================');
-            console.log('startedCall sipClient not ready',handle,callUUID,name);
-            console.log('====================================');
+ 
             this.pendingOutgoingCall={callUUID,handle,name}
             this.pendingOutgoingCallTimeout= BackgroundTimer.setTimeout(()=>{
-                console.log('====================================');
-                console.log('startedCall pendingOutgoingCallTimeout',handle,callUUID,name);
-                console.log('====================================');
+     
                 this.pendingOutgoingCall=undefined
                 this.pendingOutgoingCallTimeout=undefined
                 this.nativePhone?.reportCallEnded(callUUID,'Failed','local')
@@ -532,10 +481,6 @@ class CallService extends EventEmitter{
         this.emit('newCall',newCall)
         this.focusedCallUUID=callUUID
     
-        // if (name.replace(/[^\d+*#]/g, '').trim()===handle.trim()) {
-        //     this.matchContact(callUUID,handle)            
-        // }
-
 
     }
 
@@ -559,9 +504,7 @@ class CallService extends EventEmitter{
 
     answeredCall(callUUID:string){
 
-        console.log('====================================');
-        console.log('answeredCall',callUUID);
-        console.log('====================================');
+   
     
         if (this.pendingCall&& this.pendingCall.callUUID===callUUID) {
             this.pendingCall.isAnswered=true
@@ -581,9 +524,6 @@ class CallService extends EventEmitter{
 
     terminateCall(){
 
-        console.log('====================================');
-        console.log('terminateCall',this.focusedCallUUID);
-        console.log('====================================');
 
         if(!this.focusedCallUUID){
             this.nativePhone?.clear()
@@ -596,9 +536,6 @@ class CallService extends EventEmitter{
 
     endCallByUUID(callUUID:string){
 
-        console.log('====================================');
-        console.log('endCallByUUID',callUUID);
-        console.log('====================================');
 
         if (this.pendingCallTimeout&& this.pendingCall&& this.pendingCall.callUUID===callUUID) {
             this.pendingCall=undefined
@@ -806,91 +743,12 @@ class CallService extends EventEmitter{
       
     }
 
-    // matchContact(callUUID:string,handle:string){
-
-    
-    //     const matchedContact= contactLookupService.getContactByNumber(handle);
-
-    //     if (matchedContact) { 
-    //         const fullName=matchedContact.contact.givenName.concat(' ',matchedContact.contact.familyName);
-    //         this.updateCallInfo(callUUID,fullName)
-    //     }else{
-    //        this.matchContactWithAsyncSources(callUUID,handle)
-    //     }
-    
-    // }
-
-    // async matchContactWithAsyncSources(callUUID:string,handle:string){
-
-    //     const colleagues= await getColleagues();
-
-    //     if (colleagues) {
-    //         const matchedColleague= Object.values(colleagues).find((colleague:any)=>colleague.number===handle) as any;
-    //         if (matchedColleague) {
-    //             const fullName= matchedColleague.first_name.concat(' ',matchedColleague.last_name);
-    //             this.updateCallInfo(callUUID,fullName??handle)
-    //             return
-    //         }
-    //     }
-
-
-    //     if (contactLookupService.getSharedContactMapLength()!==0) {
-    //         return
-    //     }
-            
-            
-    //     const localContacts= await loadExpoContact();
-    //     contactLookupService.updateLocalContactMap(localContacts);                           
-        
- 
-
-    //     const matchedContact= contactLookupService.getContactByNumber(handle);
-
-    //     if (matchedContact) { 
-    //         const fullName=matchedContact.contact.givenName.concat(' ',matchedContact.contact.familyName);
-    //         this.updateCallInfo(callUUID,fullName??handle)
-    //         return
-    //     }
-
-
-        
-    
-    //     const getSharedContacts=await davClient.getStandardizedContacts();
-
-    //     if (!getSharedContacts) {
-    //         return
-            
-    //     }
-
-       
-        
-    //     contactLookupService.updateSharedContactMap(getSharedContacts);
-
-
-    //     const matchedSharedContact= contactLookupService.getContactByNumber(handle);
-
-
-    //     if (matchedSharedContact) {
-    //         const fullName=matchedSharedContact.contact.givenName.concat(' ',matchedSharedContact.contact.familyName);
-    //         this.updateCallInfo(callUUID,fullName??handle)
-    //         return
-    //     }
-
-        
-      
-    // }
-
-    // reportCallError(error:unknown){
-    //     reportErrorHandler(error)
-    // }
+   
 }
 
 
 const callServiceInstance= new CallService();
 
-console.log('====================================');
-console.log('callServiceInstance', callServiceInstance);
-console.log('====================================');
 
 export default callServiceInstance;
 

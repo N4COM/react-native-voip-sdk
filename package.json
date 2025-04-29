@@ -1,8 +1,9 @@
 {
     "name": "react-native-voip-sdk",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "description": "A simple VoIP provider SDK for React Native using JsSIP and react-native-callkeep",
-    "main": "src/index.ts",
+    "main":"lib/index.js",
+    "types":"lib/index.d.ts",
     "scripts": {
         "build": "tsc"
     },
@@ -13,23 +14,15 @@
         "react-native": ">=0.60.0",
         "react-native-background-timer": "^2.4.1",
         "react-native-callkeep": ">=4.3.14",
-        "react-native-onesignal": ">=4.1.1",
         "react-native-voip-push-notification": ">=3.3.2",
-        "@react-native-async-storage/async-storage": "^2.1.2"
+        "@react-native-async-storage/async-storage": "^2.1.2",
+        "react-native-webrtc": "https://github.com/nimbleape/react-native-webrtc.git#84-plus-dtmf-plus-field-trial"
     },
     "dependencies": {
-
-        "@react-native-firebase/app": "^21.7.1",
-        "@react-native-firebase/messaging": "^21.7.1",
         "crypto-js": "^4.2.0",
         "eventemitter3": "^5.0.1",
         "jssip": "https://github.com/men3malgmatti/JsSIP.git#n4com-app",
-        "react-native-background-timer": "^2.4.1",
-        "react-native-callkeep": "^4.3.14",
-        "react-native-onesignal": "^4.1.1",
-        "react-native-uuid": "^2.0.3",
-        "react-native-voip-push-notification": "^3.3.2",
-        "react-native-webrtc": "https://github.com/nimbleape/react-native-webrtc.git#84-plus-dtmf-plus-field-trial"
+        "react-native-uuid": "^2.0.3"
     },
     "devDependencies": {
         "@babel/core": "^7.25.2",

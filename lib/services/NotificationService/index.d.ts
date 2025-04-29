@@ -3,7 +3,7 @@ declare class NotificationService {
     private callService;
     constructor(callService: CallServiceType);
     init(): void;
-    registerOneSignalSdk(): void;
+    registerPushToken(pushToken: string, platform: "a" | "i"): void;
     registerVoipListeners(): void;
     destroy(): void;
     registerAndroid(): Promise<void>;

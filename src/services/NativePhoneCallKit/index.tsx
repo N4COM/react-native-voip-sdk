@@ -1,6 +1,5 @@
 import { Platform } from "react-native";
 import RNCallKeep, { CONSTANTS } from "react-native-callkeep";
-// import AndroidCallBridge from "../AndroidNativeCallBridge";
 import { CallServiceType } from "../callService";
 import uuid from 'react-native-uuid';
 // import InCallManager from 'react-native-incall-manager';
@@ -29,17 +28,12 @@ class NativePhone{
 
     private callService!:CallServiceType;
     private static instance:NativePhone;
-    // private androidCallBridge!: AndroidCallBridge|null;
 
     private callStartingMap=new Map<string,string>();
 
     constructor(callService:CallServiceType) {
 
-        console.log('====================================');
-        console.log('NativePhone initiated');
-        console.log('====================================');
-        
-     
+ 
         if (NativePhone.instance) {
             console.log('====================================');
             console.log('NativePhone instance already exists');
@@ -49,16 +43,13 @@ class NativePhone{
 
         NativePhone.instance = this;
         this.callService = callService;
-        // this.androidCallBridge = Platform.OS==='android' ?new AndroidCallBridge(this.showIncomingCall.bind(this),this.androidEndCallHandler.bind(this),this.androidAnswerCallHandler.bind(this)):null;
         this.init();
         
     }
 
     async init(){
 
-        console.log('====================================');
-        console.log('init of NativePhone');
-        console.log('====================================');
+
 
         try {
             await RNCallKeep.setup({
@@ -99,9 +90,6 @@ class NativePhone{
 
     registerEventsListeners(){
 
-        console.log('====================================');
-        console.log('NativePhoneCallKit registerEventsListeners');
-        console.log('====================================');
 
         RNCallKeep.addEventListener('didReceiveStartCallAction',(obj)=> this.onNativeCallStart(obj));
         RNCallKeep.addEventListener('answerCall',({callUUID})=>this.onNativeCallAnswer(callUUID));
@@ -110,7 +98,6 @@ class NativePhone{
         RNCallKeep.addEventListener('didDisplayIncomingCall',(event)=> this.onNativeCallDisplay(event));
         RNCallKeep.addEventListener('didPerformSetMutedCallAction',({ muted, callUUID })=> this.onNativeCallMute( muted, callUUID ));
         RNCallKeep.addEventListener('didToggleHoldCallAction',({hold, callUUID })=> this.onNativeCallHold(hold, callUUID ));
-        // if (Platform.OS==='android')  RNCallKeep.addEventListener("showIncomingCallUi",({handle, callUUID, name })=> this.onNativeAndroidCallShow(handle, callUUID, name ));
         RNCallKeep.addEventListener("didPerformDTMFAction",(obj)=> this.onNativeCallDTMF(obj));
         RNCallKeep.addEventListener("didChangeAudioRoute",(obj)=> this.onNativeCallAudioRoute(obj));
         // DeviceEventEmitter.addListener('Proximity', function (data) {
@@ -140,20 +127,13 @@ class NativePhone{
 
 
     async getInitialEvents(){
-        console.log('====================================');
-        console.log('getInitialEvents');
-        console.log('====================================');
+    
         const events=await RNCallKeep.getInitialEvents();
-        console.log('====================================');
-        console.log('getInitialEvents',events);
-        console.log('====================================');
+    
     }
 
     onNativeCallStart(obj:any){
 
-        console.log('====================================');
-        console.log('onNativeCallStart',obj);
-        console.log('====================================');
 
         if (!obj.handle) {    
             return;
@@ -182,16 +162,12 @@ class NativePhone{
 
     onNativeCallAnswer(callUUID:string){
 
-        console.log('====================================');
-        console.log('onNativeCallAnswer',callUUID);
-        console.log('====================================');
+      
       
    
       try {
             this.callService.answeredCall(callUUID);
-            // if (Platform.OS==='android') {
-            //     // this.androidCallBridge?.dismissCall(callUUID);                    
-            // }
+
 
       } catch (error) {
             console.log('error in answering native call',error);
@@ -202,10 +178,6 @@ class NativePhone{
     }
 
     onNativeCallEnd(callUUID:string){
-        console.log('====================================');
-        console.log('onNativeCallEnd',callUUID);
-        console.log('====================================');
-
         this.callService.endCallByUUID(callUUID);
     }
 
@@ -254,18 +226,6 @@ class NativePhone{
         this.callService.onCallHeld(callUUID,hold);
     }
 
-
-    onNativeAndroidCallShow(handle:string, callUUID:string, name:string){
-        
-        // if (this.androidCallBridge?.incomingCallScreenActive && this.androidCallBridge?.incomingCallScreenPayload.uuid!==callUUID) {
-        //     this.reportCallEnded(callUUID,'Failed','local');
-        //     return;
-        // }
-        // this.androidCallBridge?.showIncomingCallScreen({uuid:callUUID, callerName:name, callerHandle:handle});
-        // this.onNativeCallDisplay({ error:null, callUUID, handle, localizedCallerName:name, hasVideo:false, fromPushKit:null, payload:null });
-        
-    }
-
     onNativeCallDTMF(obj:{digits:string, callUUID:string}){
         this.callService.sendDTMF(obj.digits,obj.callUUID);
     }
@@ -276,15 +236,8 @@ class NativePhone{
 
     onNativeCallDisplay(event:any){
 
-        console.log('====================================');
-        console.log('onNativeCallDisplay',event);   
-        console.log('====================================');
-
         this.callService.callScreenDisplayed(event.callUUID,event.handle,event.localizedCallerName);
 
-        // if (Platform.OS==='android') {
-        //     RNCallKeep.backToForeground();
-        // }
     }  
 
     setEstablishedCall(callUUID:string){
@@ -299,7 +252,7 @@ class NativePhone{
         RNCallKeep.displayIncomingCall(callUUID, handle, name);
 
         if (Platform.OS==='android') {
-            // RNCallKeep.backToForeground();
+  
             this.onNativeCallDisplay({callUUID, handle, localizedCallerName:name, hasVideo:false, fromPushKit:null, payload:null });
         }
       
@@ -310,26 +263,20 @@ class NativePhone{
 
         const causeCode= parseCauseCode(cause);
         RNCallKeep.reportEndCallWithUUID(callUUID,causeCode);
-        // todo add call status check
-        // this.androidCallBridge?.incomingCallScreenActive&& this.androidCallBridge?.dismissCall(callUUID);
+
 
     }
 
     androidEndCallHandler(payload:any){
-        console.log('====================================');
-        console.log('androidEndCallHandler',payload);
-        console.log('====================================');
         RNCallKeep.endCall(payload.uuid);
-        // this.androidCallBridge?.dismissCall(payload.uuid);
     }
 
     androidAnswerCallHandler(payload:any){
         
         RNCallKeep.answerIncomingCall(payload.uuid);
         if (payload.isHeadless) {
-            // this.androidCallBridge?.launchApp(payload.uuid,payload.callerName);   
         }else{
-            // this.androidCallBridge?.backToForeground();
+
         }
         
     }
@@ -359,20 +306,13 @@ class NativePhone{
 
 
     startCall( callUUID:string,handle:string, name:string){
-
-        console.log('====================================');
-        console.log('startCall',callUUID,handle,name);
-        console.log('====================================');
-
         RNCallKeep.startCall(callUUID, handle, name,'number',false);
         RNCallKeep.updateDisplay(callUUID, name, handle);
         this.callStartingMap.set(callUUID,name);
     }
 
     endCall(callUUID:string){
-        console.log('====================================');
-        console.log('endCall',callUUID);
-        console.log('====================================');
+   
         RNCallKeep.endCall(callUUID);
     }
 
@@ -389,16 +329,13 @@ class NativePhone{
     }
 
     clear(){
-        console.log('====================================');
-        console.log('clear');
-        console.log('====================================');
+
         RNCallKeep.endAllCalls();
     }
 
     updateDisplay(callUUID:string, name:string, handle:string){
      
         RNCallKeep.updateDisplay(callUUID, name, handle);
-        // this.androidCallBridge?.updateDisplay(callUUID,name,handle);
     }
 }
 

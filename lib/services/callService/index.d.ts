@@ -47,6 +47,7 @@ declare class CallService extends EventEmitter {
     constructor();
     init(token: string): Promise<void>;
     saveToken(token: string): Promise<boolean>;
+    registerPushToken(pushToken: string, platform: "a" | "i"): void;
     initiateCallService(): void;
     appStateListener(): void;
     stopCallService(): void;

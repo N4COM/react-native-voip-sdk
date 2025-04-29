@@ -8,6 +8,7 @@ declare class SipClient {
     isRegistered: boolean;
     constructor(callService: CallServiceType);
     registerClient(): Promise<void>;
+    registerPushToken(pushToken: string, platform: "a" | "i"): Promise<void>;
     init(): void;
     registerEventsListeners(): void;
     destroy(): void;

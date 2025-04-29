@@ -103,21 +103,24 @@ class SipClient {
         const {ua,ownerID}= new SoftPhone(credentials.userName, credentials.password, credentials.realm, credentials.ownerID, credentials.webSocket);
         this.configurationParams=credentials;
         this.sipUA=ua;
-        this.sipUA.registrator().setExtraContactParams({
-            'app-id': "alpitour",
-            'pn-tok': "push-token",   // TODO: change to the push token from the notification service
-             'pn-type': "n4com"  
-        });
+        
         this.init();
         this.registerEventsListeners();
         this.callService.setCallServiceDeviceId(credentials.id);
     }
 
-    init(){
+    async registerPushToken(pushToken:string, platform:"a"|"i"){
+        if(!pushToken){
+            return;
+        }
+        this.sipUA.registrator().setExtraContactParams({
+            'app-id': "alpitour",
+            'pn-tok':  `${platform}:${pushToken}`,
+            'pn-type': "n4com"
+        });
+    }
 
-        console.log('====================================');
-        console.log('init sip');
-        console.log('====================================');
+    init(){
  
         if (!this.sipUA) {
             console.log('====================================');
@@ -201,33 +204,21 @@ class SipClient {
 
 
     handleFailedRTCSession(e:any){
-        console.log('====================================');
-        console.log('handleFailedRTCSession');
-        console.log('====================================');
         this.callService.onSipCallFailed(e);
     
     }
 
     handleEndedRTCSession(e:any){
-        console.log('====================================');
-        console.log('handleEndedRTCSession');
-        console.log('====================================');
         this.callService.onSipCallEnded(e);
     }
 
     handleConfirmedRTCSession(e:any){
-        console.log('====================================');
-        console.log('handleConfirmedRTCSession');
-        console.log('====================================');
+
         this.callService.onSipCallConfirmed(e);
 
     }
 
     handleIceCandidateRTCSession(e:any){
-
-        console.log('====================================');
-        console.log('handleIceCandidateRTCSession');
-        console.log('====================================');
 
         if (this.iceTimeOutId) {
             clearTimeout(this.iceTimeOutId);
@@ -237,23 +228,17 @@ class SipClient {
     }
 
     handlePeerConnectionRTCSession(e:any){
-        console.log('====================================');
-        console.log('handlePeerConnectionRTCSession');
-        console.log('====================================');
+ 
         // this.callService.onSipCallPeerConnection(e);
     }
 
     handleProgressRTCSession(e:any){
-        console.log('====================================');
-        console.log('handleProgressRTCSession');
-        console.log('====================================');
+
         this.callService.onSipCallProgress(e);
     }
 
     handleAcceptedRTCSession(e:any){
-        console.log('====================================');
-        console.log('handleAcceptedRTCSession');
-        console.log('====================================');
+
         if (this.iceTimeOutId) {
             clearTimeout(this.iceTimeOutId);
             this.iceTimeOutId=null; 
@@ -262,22 +247,16 @@ class SipClient {
     }
 
     handleSendingRTCSession(e:any){
-        console.log('====================================');
-        console.log('handleSendingRTCSession');
-        console.log('====================================');
+
     }
 
     handleSdpRTCSession(e:any){
-        console.log('====================================');
-        console.log('handleSdpRTCSession');
-        console.log('====================================');
+ 
     }
 
 
     answerCall(sessionId:string){ 
-        console.log('====================================');
-        console.log('answerCall',sessionId);
-        console.log('====================================');
+
         const session=this.sessionMap.get(sessionId);
         if (session) {
             session.answer(callOptions);
@@ -285,17 +264,13 @@ class SipClient {
     }
 
     removeSession(sessionId:string){
-        console.log('====================================');
-        console.log('removeSession',sessionId);
-        console.log('====================================');
+   
         this.sessionMap.delete(sessionId);
     }
 
     endCall(sessionId:string){
 
-        console.log('====================================');
-        console.log('endCall',sessionId);
-        console.log('====================================');
+
 
         const session=this.sessionMap.get(sessionId);
         if (session) {
@@ -312,9 +287,7 @@ class SipClient {
     }
     
     startCall(handle:string){
-        console.log('====================================');
-        console.log('startCall',handle);
-        console.log('====================================');
+
         const session = this.sipUA.call(handle,callOptions);
         this.sessionMap.set(session._request.call_id,session);
         return session;

@@ -17,7 +17,6 @@ declare class NativePhone {
     }[]): void;
     onNativeCallMute(muted: boolean, callUUID: string): void;
     onNativeCallHold(hold: boolean, callUUID: string): void;
-    onNativeAndroidCallShow(handle: string, callUUID: string, name: string): void;
     onNativeCallDTMF(obj: {
         digits: string;
         callUUID: string;
