@@ -42,7 +42,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var config_plugins_1 = require("@expo/config-plugins");
 var ios_1 = require("./ios");
 var Manifest_1 = require("@expo/config-plugins/build/android/Manifest");
-var withCallkeep_js_1 = __importDefault(require("../../node_modules/@config-plugins/react-native-callkeep/build/withCallkeep.js"));
+var withCallkeep_js_1 = __importDefault(require("@config-plugins/react-native-callkeep/build/withCallkeep.js"));
 var pak = require("react-native-voip-push-notification/package.json");
 // Add push notification entitlement
 var withPushNotification = function (config) {
