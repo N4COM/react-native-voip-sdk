@@ -1,7 +1,7 @@
 import VoipPushNotification from 'react-native-voip-push-notification';
 import messaging from '@react-native-firebase/messaging';
 import { CallServiceType } from "../callService";
-
+import { Platform } from 'react-native';
 
 class NotificationService {
 
@@ -23,6 +23,11 @@ class NotificationService {
 
 
     registerVoipListeners() {
+
+            if (Platform.OS === 'android') {
+                return;
+            }
+        
             // get the ios VOIP token and register it on the onesignal Voip app
             VoipPushNotification.addEventListener('register', (token) => {
             // --- send token to your apn provider server
@@ -71,6 +76,10 @@ class NotificationService {
     
 
     async registerAndroid() {
+
+        if (Platform.OS === 'ios') {
+            return;
+        }
 
         console.log('====================================');
         console.log('registerAndroid');
