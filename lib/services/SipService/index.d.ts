@@ -5,9 +5,13 @@ declare class SipClient {
     private sessionMap;
     private iceTimeOutId;
     private configurationParams;
+    private platform;
+    private pushToken;
+    private regFlag;
     isRegistered: boolean;
     constructor(callService: CallServiceType);
     registerClient(): Promise<void>;
+    tokenRegistration(): void;
     registerPushToken(pushToken: string, platform: "a" | "i"): Promise<void>;
     init(): void;
     registerEventsListeners(): void;
