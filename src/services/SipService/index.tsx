@@ -14,7 +14,7 @@ const callOptions={
     }
 }
 
-const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefined> => {
+const getSoftPhoneCredentialsFromServer = async (): Promise< SoftPhoneCredentials |undefined> => {
 
     const token=await AsyncStorage.getItem('token')
     if (!token) {
@@ -57,7 +57,31 @@ const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefin
 }
 
 
+const saveCredentials=async (credentials:SoftPhoneCredentials)=>{
+    await AsyncStorage.setItem('softPhoneCredentials',JSON.stringify(credentials));
+}
 
+const getCachedCredentials=async ():Promise<SoftPhoneCredentials|undefined>=>{
+    const credentials=await AsyncStorage.getItem('softPhoneCredentials');
+    return credentials? JSON.parse(credentials) : undefined;
+}
+
+const removeCachedCredentials=async ()=>{
+    await AsyncStorage.removeItem('softPhoneCredentials');
+}
+
+
+const getSoftPhoneCredentials=async ():Promise<SoftPhoneCredentials|undefined>=>{
+    const cachedCredentials=await getCachedCredentials();
+    if(cachedCredentials){
+        return cachedCredentials;
+    }
+    const credentials=await getSoftPhoneCredentialsFromServer();
+    if(credentials){
+        await saveCredentials(credentials);
+    }
+    return credentials;
+}
 
 
 type SoftPhoneCredentials = {
@@ -113,6 +137,12 @@ class SipClient {
         this.tokenRegistration();
     }
 
+    async updateCredentials(){
+        const credentials=await getSoftPhoneCredentialsFromServer();
+        if(credentials){
+            await saveCredentials(credentials);
+        }
+    }
 
 
     tokenRegistration(){

@@ -119,7 +119,15 @@ class CallService extends EventEmitter{
         if (!saved) {
             return
         }
-        this.initiateCallService()
+        await this.initiateCallService()
+    }
+
+    async updateToken(token:string){
+        const saved=await this.saveToken(token)
+        if (!saved) {
+            return
+        }
+        await this.sipClient.updateCredentials()
     }
 
     async saveToken(token:string){
@@ -139,8 +147,8 @@ class CallService extends EventEmitter{
        this.sipClient.registerPushToken(pushToken,platform);
     }
 
-    initiateCallService(){
-        this.sipClient.registerClient()
+    async initiateCallService(){
+        await this.sipClient.registerClient()
         this.notificationService.registerAndroid()
     }
 
