@@ -79,12 +79,16 @@ class SipClient {
     private sessionMap:Map<string,any>=new Map();    
     private iceTimeOutId:number|null=null;
     private configurationParams:SoftPhoneCredentials|undefined;
-
+    private platform:string|null=null;
+    private pushToken:string|null=null;
+    private regFlag:boolean=false;
     public  isRegistered:boolean=false;
     
     constructor(callService:CallServiceType) {   
         this.callService = callService;
         this.registerClient();
+        this.platform=null;
+        this.pushToken=null;
         
     }
 
@@ -103,21 +107,50 @@ class SipClient {
         const {ua,ownerID}= new SoftPhone(credentials.userName, credentials.password, credentials.realm, credentials.ownerID, credentials.webSocket);
         this.configurationParams=credentials;
         this.sipUA=ua;
-        
         this.init();
         this.registerEventsListeners();
         this.callService.setCallServiceDeviceId(credentials.id);
+        this.tokenRegistration();
+    }
+
+
+
+    tokenRegistration(){
+
+        if(!this.pushToken || !this.platform || !this.sipUA){
+            return;
+        }
+
+        this.sipUA.registrator().setExtraContactParams({
+            'app-id': "alpitour",
+            'pn-tok':  `${this.platform}:${this.pushToken}`,
+            'pn-type': "n4com"
+        });
+
+        this.sipUA.registrator().register();
+
+        const callBack=()=>{
+            if (this.regFlag) {
+                return;
+            }
+
+            this.regFlag = true;
+
+            this.sipUA.registrator().register();
+            this.sipUA.removeListener('registered', callBack);
+        }
+
+        this.sipUA.on('registered',callBack);
+
     }
 
     async registerPushToken(pushToken:string, platform:"a"|"i"){
         if(!pushToken){
             return;
         }
-        this.sipUA.registrator().setExtraContactParams({
-            'app-id': "alpitour",
-            'pn-tok':  `${platform}:${pushToken}`,
-            'pn-type': "n4com"
-        });
+        this.pushToken=pushToken;
+        this.platform=platform;
+        this.tokenRegistration();
     }
 
     init(){
