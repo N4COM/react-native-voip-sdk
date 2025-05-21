@@ -115,12 +115,20 @@ class CallService extends EventEmitter{
 
     }
 
+    async saveEnv(isDev:boolean){
+        await AsyncStorage.setItem('isDev',isDev.toString())
+    }
 
-    async init(token:string){
+    async init(token:string , isDev?:boolean){
         const saved=await this.saveToken(token)
         if (!saved) {
             return
         }
+
+        if (isDev) {
+            await this.saveEnv(isDev)
+        }
+
         await this.initiateCallService()
     }
     

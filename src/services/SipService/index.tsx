@@ -147,14 +147,16 @@ class SipClient {
     }
 
 
-    tokenRegistration(){
+    async tokenRegistration(){
 
         if(!this.pushToken || !this.platform || !this.sipUA){
             return;
         }
 
+        const isDev=await AsyncStorage.getItem('isDev')
+
         this.sipUA.registrator().setExtraContactParams({
-            'app-id': "alpitour",
+            'app-id': isDev ? "alpitour-test" : "alpitour",
             'pn-tok':  `${this.platform}:${this.pushToken}`,
             'pn-type': "n4com"
         });

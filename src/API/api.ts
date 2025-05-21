@@ -1,7 +1,12 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const baseURL = 'https://alpitour-test.n4com.com/api';
+// let baseURL = 'https://alpitour-test.n4com.com/api';
 
-
+const getBaseURL=async ()=>{    
+    const isDev=await AsyncStorage.getItem('isDev')
+    const url = isDev ? 'https://alpitour-test.n4com.com/api' : 'https://alpitour.n4com.com/api'
+    return url
+}
 
 
 const updateHeaders = async (options: any, isTokenRequired =true) => {
@@ -18,5 +23,7 @@ const updateHeaders = async (options: any, isTokenRequired =true) => {
 export const customFetch = async (path: any,options: any, isTokenRequired = true) => {
 
     const fetchOptions = await updateHeaders(options, isTokenRequired);
-    return fetch(baseURL + path, fetchOptions);
+
+    const url = await getBaseURL()
+    return fetch(url + path, fetchOptions);
 };
