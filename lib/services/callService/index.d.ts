@@ -46,7 +46,8 @@ declare class CallService extends EventEmitter {
     tokenUpdater: undefined | (() => Promise<string>);
     callServiceDeviceId: string | undefined;
     constructor();
-    init(token: string): Promise<void>;
+    saveEnv(isDev: boolean): Promise<void>;
+    init(token: string, isDev?: boolean): Promise<void>;
     tokenUpdateFunction(tokenUpdater: () => Promise<string>): void;
     updateTokenInStorage(token: string): Promise<void>;
     updateToken(): Promise<void>;
