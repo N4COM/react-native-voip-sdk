@@ -17,6 +17,7 @@ interface CallServiceContext {
     getAudioRoutes: () => Promise<void>;
     callServiceSipInitFailed: boolean;
     initiateCallService: (token: string) => void;
+    tokenUpdateFunction: (tokenUpdater: () => Promise<string>) => void;
 }
 declare const CallServiceContext: React.Context<CallServiceContext | null>;
 declare const CallServiceProvider: ({ children }: {

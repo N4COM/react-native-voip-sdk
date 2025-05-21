@@ -43,10 +43,13 @@ declare class CallService extends EventEmitter {
     private focusedCallUUID;
     appState: AppStateStatus;
     sipServiceInitFailed: boolean;
+    tokenUpdater: undefined | (() => Promise<string>);
     callServiceDeviceId: string | undefined;
     constructor();
     init(token: string): Promise<void>;
-    updateToken(token: string): Promise<void>;
+    tokenUpdateFunction(tokenUpdater: () => Promise<string>): void;
+    updateTokenInStorage(token: string): Promise<void>;
+    updateToken(): Promise<void>;
     saveToken(token: string): Promise<boolean>;
     registerPushToken(pushToken: string, platform: "a" | "i"): void;
     initiateCallService(): Promise<void>;

@@ -8,6 +8,7 @@ declare class SipClient {
     private platform;
     private pushToken;
     private regFlag;
+    private regFailedFlag;
     isRegistered: boolean;
     constructor(callService: CallServiceType);
     registerClient(): Promise<void>;
@@ -19,6 +20,7 @@ declare class SipClient {
     destroy(): void;
     removeCredentials(): void;
     handleRegistration(e: any): void;
+    handleRegistrationFailed(e: any): Promise<void>;
     handleUnRegistration(e: any): void;
     handleNewRTCSession(sessionEvent: any): void;
     registerRTCSessionListeners(session: any): void;
