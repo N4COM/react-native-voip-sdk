@@ -106,7 +106,9 @@ class SipClient {
     private platform:string|null=null;
     private pushToken:string|null=null;
     private regFlag:boolean=false;
+    private regFailedFlag:boolean=false;
     public  isRegistered:boolean=false;
+
     
     constructor(callService:CallServiceType) {   
         this.callService = callService;
@@ -204,7 +206,7 @@ class SipClient {
         this.sipUA.on('disconnected', (e:any)=>console.log('disconnected'));
         this.sipUA.on('registered', (e:any)=>{this.handleRegistration(e)});
         this.sipUA.on('unregistered', (e:any)=>{this.handleUnRegistration(e)});
-        this.sipUA.on('registrationFailed', (e:any)=>{this.handleRegistration(e)});
+        this.sipUA.on('registrationFailed', (e:any)=>{this.handleRegistrationFailed(e)});
         this.sipUA.on('newRTCSession', (e:any)=>{this.handleNewRTCSession(e)});
     }
 
@@ -223,6 +225,16 @@ class SipClient {
         
         this.callService.onSipClientReady();
         this.isRegistered=true;
+    }
+
+    async handleRegistrationFailed(e:any){
+        this.callService.onSipClientFailed();
+        this.isRegistered=false;
+        if(!this.regFailedFlag){
+            this.regFailedFlag=true;
+            await this.callService.updateToken()
+            await this.sipUA.registrator().register();
+        }
     }
 
     handleUnRegistration(e:any){

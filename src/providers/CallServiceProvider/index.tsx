@@ -23,6 +23,7 @@ interface CallServiceContext{
     getAudioRoutes:()=>Promise<void>;
     callServiceSipInitFailed:boolean;
     initiateCallService:(token:string)=>void;
+    tokenUpdateFunction:(tokenUpdater:()=>Promise<string>)=>void;
 }
 
 
@@ -111,6 +112,10 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
         callService.init(token);
     }
 
+    const tokenUpdateFunction=(tokenUpdater:()=>Promise<string>)=>{
+        callService.tokenUpdateFunction(tokenUpdater);
+    }
+
     const stopCallService=()=>{
         callService.stopCallService();
         callService.removeSipCredentials();
@@ -175,7 +180,7 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
             startCall,endCall,holdCall,swapCall,toggleMuteCall
             ,attendedTransferCall,blindTransferCall,sendDTMF,
             setAudioRoute,getAudioRoutes,pendingCall,
-            callState,callServiceSipInitFailed,initiateCallService,stopCallService}}>
+            callState,callServiceSipInitFailed,initiateCallService,stopCallService,tokenUpdateFunction}}>
             {children}
         </CallServiceContext.Provider>
     )

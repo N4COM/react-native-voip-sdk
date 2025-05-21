@@ -98,6 +98,7 @@ class CallService extends EventEmitter{
 
     public sipServiceInitFailed:boolean=false
 
+    public tokenUpdater: undefined | (()=>Promise<string>)
 
     public callServiceDeviceId:string|undefined
 
@@ -109,7 +110,8 @@ class CallService extends EventEmitter{
         this.nativePhone= new NativePhone(this)
         this.sipClient= new SipClient(this)
         this.notificationService= new NotificationService(this)
-        this.appStateListener()    
+        this.appStateListener()
+        this.tokenUpdater=undefined
 
     }
 
@@ -121,13 +123,26 @@ class CallService extends EventEmitter{
         }
         await this.initiateCallService()
     }
-
-    async updateToken(token:string){
+    
+    tokenUpdateFunction(tokenUpdater:()=>Promise<string>){
+        this.tokenUpdater=tokenUpdater
+    }
+    
+    async updateTokenInStorage(token:string){
         const saved=await this.saveToken(token)
         if (!saved) {
             return
         }
+    }
+
+    async updateToken(){
+        if (!this.tokenUpdater) {
+            return
+        }
+        const token=await this.tokenUpdater()
+        await this.updateTokenInStorage(token)
         await this.sipClient.updateCredentials()
+
     }
 
     async saveToken(token:string){
