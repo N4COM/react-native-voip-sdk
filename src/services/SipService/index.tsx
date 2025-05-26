@@ -15,18 +15,10 @@ const callOptions={
 }
 
 const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefined> => {
-
-    const token=await AsyncStorage.getItem('token')
-    if (!token) {
-        return undefined
-    }
     
     try {
         const response= await customFetch('/webphone',{ 
             method:'GET',
-            headers:{
-                'Authorization':`Bearer ${token}`
-            }
         })
         if (!response.ok) {
             const resData = await response.json()
