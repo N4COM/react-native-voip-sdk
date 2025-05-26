@@ -81,7 +81,11 @@ class SipClient {
     private configurationParams:SoftPhoneCredentials|undefined;
 
     public  isRegistered:boolean=false;
-    
+    public platform:string|undefined;
+    public pushToken:string|undefined;
+
+
+
     constructor(callService:CallServiceType) {   
         this.callService = callService;
         this.registerClient();
@@ -109,15 +113,26 @@ class SipClient {
         this.callService.setCallServiceDeviceId(credentials.id);
     }
 
+    async customRegister(){
+
+        const isDev=await AsyncStorage.getItem('isDev')
+        
+        this.sipUA.registrator().setExtraContactParams({
+            'app-id': isDev ? "alpitour-test" : "alpitour",
+            'pn-tok':  `${this.platform}:${this.pushToken}`,
+            'pn-type': "n4com"
+        });
+
+
+    }
+
     async registerPushToken(pushToken:string, platform:"a"|"i"){
         if(!pushToken){
             return;
         }
-        this.sipUA.registrator().setExtraContactParams({
-            'app-id': "alpitour",
-            'pn-tok':  `${platform}:${pushToken}`,
-            'pn-type': "n4com"
-        });
+        this.platform=platform;
+        this.pushToken=pushToken;
+        this.customRegister();
     }
 
     init(){
