@@ -130,7 +130,7 @@ class CallService extends EventEmitter{
 
     async saveToken(token:string){
         try {
-            await AsyncStorage.setItem('token',token)
+            await AsyncStorage.setItem('N4COM_TOKEN',token)
             return true
         } catch (error) {
             console.log('====================================');

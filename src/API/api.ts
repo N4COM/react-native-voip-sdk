@@ -10,7 +10,7 @@ const getBaseURL=async ()=>{
 
 const waitForToken=async (maxRetries = 3, retryDelay = 500): Promise<string | null>=>{
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const token = await AsyncStorage.getItem('token');
+        const token = await AsyncStorage.getItem('N4COM_TOKEN');
         if (token) {
             return token;
         }
@@ -38,7 +38,7 @@ const updateHeaders = async (options: any, isTokenRequired =true) => {
         myHeaders.set('Authorization',`Bearer ${token}`)
     }
 
-    return {...options, headers : { ...options.headers, ...myHeaders}};
+    return {...options, headers : myHeaders};
 };
 
 
