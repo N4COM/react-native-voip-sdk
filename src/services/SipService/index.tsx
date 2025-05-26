@@ -79,7 +79,7 @@ class SipClient {
     private sessionMap:Map<string,any>=new Map();    
     private iceTimeOutId:number|null=null;
     private configurationParams:SoftPhoneCredentials|undefined;
-
+    private regFlag:boolean=false;
     public  isRegistered:boolean=false;
     public platform:string|undefined;
     public pushToken:string|undefined;
@@ -107,21 +107,41 @@ class SipClient {
         const {ua,ownerID}= new SoftPhone(credentials.userName, credentials.password, credentials.realm, credentials.ownerID, credentials.webSocket);
         this.configurationParams=credentials;
         this.sipUA=ua;
-        
         this.init();
         this.registerEventsListeners();
         this.callService.setCallServiceDeviceId(credentials.id);
+        this.customRegister();
     }
 
     async customRegister(){
 
+        const registerCallback=()=>{
+
+            if (this.regFlag) {
+                return;
+            }
+            this.regFlag = true;
+            
+           this.sipUA.registrator().register();
+           this.sipUA.removeListener("registered",registerCallback);
+        }
+
         const isDev=await AsyncStorage.getItem('isDev')
         
+        if(!this.sipUA || !this.pushToken || !this.platform){
+            return;
+        }
+
+
         this.sipUA.registrator().setExtraContactParams({
             'app-id': isDev ? "alpitour-test" : "alpitour",
             'pn-tok':  `${this.platform}:${this.pushToken}`,
             'pn-type': "n4com"
         });
+
+        this.sipUA.registrator().register();
+
+        this.sipUA.on("registered",registerCallback);
 
 
     }
