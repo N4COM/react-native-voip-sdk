@@ -131,7 +131,10 @@ class SipClient {
             'pn-type': "n4com"
         });
 
-        this.sipUA.registrator().register();
+        if(this.sipUA.isConnected()){
+            this.sipUA.registrator().register();
+        }
+
 
         this.sipUA.on("registered",registerCallback);
 
