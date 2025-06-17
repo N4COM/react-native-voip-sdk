@@ -33,7 +33,7 @@ declare class SipClient {
     answerCall(sessionId: string): void;
     removeSession(sessionId: string): void;
     endCall(sessionId: string): void;
-    startCall(handle: string): any;
+    startCall(handle: string, extraCallData?: string): any;
     holdCall(sessionId: string, isHeld: boolean): void;
     muteCall(sessionId: string, isMuted: boolean): void;
     attendedTransferCall(originCall: Call, targetCall: Call): void;

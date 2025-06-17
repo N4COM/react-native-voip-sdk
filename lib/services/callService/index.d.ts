@@ -44,6 +44,10 @@ declare class CallService extends EventEmitter {
     appState: AppStateStatus;
     sipServiceInitFailed: boolean;
     callServiceDeviceId: string | undefined;
+    extraCallData: {
+        callUUID: string;
+        callData: string;
+    } | null;
     constructor();
     saveDev(isDev: boolean): Promise<void>;
     init(token: string, isDev?: boolean): Promise<void>;
@@ -67,7 +71,7 @@ declare class CallService extends EventEmitter {
     onIncomingFcmCall(callUUID: string, handle: string, name: string): void;
     onSipLocalSessionCreated(): void;
     startedCall(handle: string, callUUID: string, name?: string): void;
-    makeCall(handle: string, name?: string): void;
+    makeCall(handle: string, name?: string, calldata?: string): void;
     answeredCall(callUUID: string): void;
     terminateCall(): void;
     endCallByUUID(callUUID: string): void;
