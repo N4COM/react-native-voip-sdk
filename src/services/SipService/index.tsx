@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import SoftPhone from "../../classes/softPhone";
 import { Call, CallServiceType } from "../callService";
 
-const callOptions={
+const callOptions:any={
     'mediaConstraints' : { 'audio': true, 'video': false},
     'pcConfig': {
         'iceServers': [
@@ -316,9 +316,15 @@ class SipClient {
         }
     }
     
-    startCall(handle:string){
+    startCall(handle:string, extraCallData?:string){
+        
+        const options = {...callOptions}
 
-        const session = this.sipUA.call(handle,callOptions);
+        if (extraCallData) {
+            options.extraHeaders=[`X-2X-CallData: ${extraCallData}`];
+        }
+
+        const session = this.sipUA.call(handle,options);
         this.sessionMap.set(session._request.call_id,session);
         return session;
     }

@@ -101,6 +101,11 @@ class CallService extends EventEmitter{
 
     public callServiceDeviceId:string|undefined
 
+    public extraCallData:{
+        callUUID:string,
+        callData:string
+    }|null=null
+
 
     constructor(){
         super()
@@ -465,9 +470,9 @@ class CallService extends EventEmitter{
             
         }
 
+        let extraCallData=this.extraCallData?.callUUID === callUUID ? this.extraCallData.callData : undefined
 
-
-        const session= this.sipClient.startCall(handle);
+        const session= this.sipClient.startCall(handle,extraCallData);
         
         const newCall:Call= {
             sessionId:session._request.call_id,
@@ -491,11 +496,11 @@ class CallService extends EventEmitter{
     }
 
 
-    makeCall(handle:string, name?:string){
+    makeCall(handle:string, name?:string, calldata?:string){
 
-        console.log("makeCall",handle, name);
+        console.log("makeCall",handle, name, calldata);
     
-
+        
 
         if (!this.canCall) {        
             console.log("makeCall failed");
@@ -503,6 +508,17 @@ class CallService extends EventEmitter{
             return
         }
         const callUUID= getNewUuid();
+
+        if (calldata) {
+            this.extraCallData={
+                callUUID:callUUID,
+                callData:calldata
+            };
+        }else{
+            this.extraCallData=null;
+        }
+
+
         this.nativePhone?.startCall(callUUID,handle,name? name:handle)
     
     }
