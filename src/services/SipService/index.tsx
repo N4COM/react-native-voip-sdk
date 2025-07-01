@@ -324,6 +324,14 @@ class SipClient {
             options.extraHeaders=[`X-2X-CallData: ${extraCallData}`];
         }
 
+        if (this.callService.specialHandleCall) {
+            console.log("startCall specialHandleCall",this.callService.specialHandleCall);
+            handle=this.callService.specialHandleCall.handle;
+            this.callService.specialHandleCall=null;
+        }
+
+        console.log("startCall handle",handle);
+
         const session = this.sipUA.call(handle,options);
         this.sessionMap.set(session._request.call_id,session);
         return session;

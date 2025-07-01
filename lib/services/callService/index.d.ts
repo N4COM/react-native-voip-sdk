@@ -48,6 +48,10 @@ declare class CallService extends EventEmitter {
         callUUID: string;
         callData: string;
     } | null;
+    specialHandleCall: {
+        handle: string;
+        callUUID: string;
+    } | null;
     constructor();
     saveDev(isDev: boolean): Promise<void>;
     init(token: string, isDev?: boolean): Promise<void>;
@@ -71,6 +75,7 @@ declare class CallService extends EventEmitter {
     onIncomingFcmCall(callUUID: string, handle: string, name: string): void;
     onSipLocalSessionCreated(): void;
     startedCall(handle: string, callUUID: string, name?: string): void;
+    checkIfStringHandle(handle: string): boolean;
     makeCall(handle: string, name?: string, calldata?: string): void;
     answeredCall(callUUID: string): void;
     terminateCall(): void;

@@ -106,6 +106,11 @@ class CallService extends EventEmitter{
         callData:string
     }|null=null
 
+    public specialHandleCall:{
+        handle:string,
+        callUUID:string,
+    }|null=null
+
 
     constructor(){
         super()
@@ -495,11 +500,22 @@ class CallService extends EventEmitter{
 
     }
 
+    checkIfStringHandle(handle:string){
+        // check if the handle contains only numbers and * and #
+        if (/^[0-9*#]+$/.test(handle)) {
+            console.log("makeCall not string handle",handle);
+            return false
+        }
+        console.log("makeCall string handle",handle);
+        return true
+    }
+
 
     makeCall(handle:string, name?:string, calldata?:string){
 
         console.log("makeCall",handle, name, calldata);
     
+     
         
 
         if (!this.canCall) {        
@@ -508,6 +524,14 @@ class CallService extends EventEmitter{
             return
         }
         const callUUID= getNewUuid();
+
+        const isStringHandle=this.checkIfStringHandle(handle)
+        if (isStringHandle) {
+            this.specialHandleCall={
+                handle,
+                callUUID:callUUID
+            }
+        }
 
         if (calldata) {
             this.extraCallData={

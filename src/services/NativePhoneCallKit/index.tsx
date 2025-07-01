@@ -149,7 +149,7 @@ class NativePhone{
 
 
             const callUUID= getNewUuid();
-            RNCallKeep.startCall(callUUID, obj.handle, obj.handle,'number',false);
+            RNCallKeep.startCall(callUUID, obj.handle, obj.handle,'generic',false);
             return
         }
           
@@ -306,7 +306,7 @@ class NativePhone{
 
 
     startCall( callUUID:string,handle:string, name:string){
-        RNCallKeep.startCall(callUUID, handle, name,'number',false);
+        RNCallKeep.startCall(callUUID, handle, name,'generic',false);
         RNCallKeep.updateDisplay(callUUID, name, handle);
         this.callStartingMap.set(callUUID,name);
     }
