@@ -324,11 +324,6 @@ class SipClient {
             options.extraHeaders=[`X-2X-CallData: ${extraCallData}`];
         }
 
-        if (this.callService.specialHandleCall) {
-            console.log("startCall specialHandleCall",this.callService.specialHandleCall);
-            handle=this.callService.specialHandleCall.handle;
-            this.callService.specialHandleCall=null;
-        }
 
         console.log("startCall handle",handle);
 

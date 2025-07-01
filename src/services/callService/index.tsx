@@ -457,7 +457,7 @@ class CallService extends EventEmitter{
     startedCall(handle:string,callUUID:string,name?:string){
    
         name = name || handle
-        handle= handle.replace(/[^\d+*#]/g, '')
+        // handle= handle.replace(/[^\d+*#]/g, '')
         if (!this.canCall) {
  
             this.pendingOutgoingCall={callUUID,handle,name}
@@ -476,8 +476,9 @@ class CallService extends EventEmitter{
         }
 
         let extraCallData=this.extraCallData?.callUUID === callUUID ? this.extraCallData.callData : undefined
+        let sipHandle = this.specialHandleCall?.callUUID=== callUUID ? this.specialHandleCall.handle : handle
 
-        const session= this.sipClient.startCall(handle,extraCallData);
+        const session= this.sipClient.startCall(sipHandle,extraCallData);
         
         const newCall:Call= {
             sessionId:session._request.call_id,
@@ -496,11 +497,17 @@ class CallService extends EventEmitter{
         this.callStore.addCall(newCall);
         this.emit('newCall',newCall)
         this.focusedCallUUID=callUUID
+        this.specialHandleCall=null;
     
 
     }
 
     checkIfStringHandle(handle:string){
+
+        if( Platform.OS==='ios') {
+            return false
+        }
+
         // check if the handle contains only numbers and * and #
         if (/^[0-9*#]+$/.test(handle)) {
             console.log("makeCall not string handle",handle);
