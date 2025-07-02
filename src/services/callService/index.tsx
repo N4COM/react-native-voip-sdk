@@ -157,7 +157,9 @@ class CallService extends EventEmitter{
 
     initiateCallService(){
         this.sipClient.registerClient()
-        this.notificationService.registerAndroid()
+        if (Platform.OS==='android') {
+            this.notificationService.registerAndroid()
+        }
     }
 
     appStateListener(){

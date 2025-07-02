@@ -1,6 +1,7 @@
 import VoipPushNotification from 'react-native-voip-push-notification';
 import messaging from '@react-native-firebase/messaging';
 import { CallServiceType } from "../callService";
+import { Platform } from 'react-native';
 
 
 class NotificationService {
@@ -14,7 +15,10 @@ class NotificationService {
 
     init() {
         this.registerVoipListeners();
-        this.registerAndroid();
+
+        if (Platform.OS==='android') {
+            this.registerAndroid();
+        }
     }
 
     registerPushToken(pushToken:string, platform:"a"|"i"){
