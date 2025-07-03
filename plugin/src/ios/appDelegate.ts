@@ -69,7 +69,7 @@ export const withIosAppDelegate: ConfigPlugin = (config) => {
 
 - (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(PKPushType)type withCompletionHandler:(void (^)(void))completion
 {
-    NSString *uuid = payload.dictionaryPayload[@"uuid"];
+    NSString *uuid = [self makeSureUUIDisUUID4:payload.dictionaryPayload[@"uuid"]];
     NSString *callerName = [NSString stringWithFormat:@"%@ is Calling", payload.dictionaryPayload[@"callerName"]];
     NSString *handle = payload.dictionaryPayload[@"handle"];
     BOOL isVideo = [payload.dictionaryPayload[@"isVideo"] boolValue];
@@ -95,6 +95,35 @@ export const withIosAppDelegate: ConfigPlugin = (config) => {
                           fromPushKit: YES
                               payload: nil
                 withCompletionHandler: completion];
+}
+// Helper function to convert string to MD5
+- (NSString *)md5:(NSString *)string {
+    const char *cStr = [string UTF8String];
+    unsigned char digest[16];
+    CC_MD5(cStr, strlen(cStr), digest);
+    
+    NSMutableString *output = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
+    for(int i = 0; i < CC_MD5_DIGEST_LENGTH; i++) {
+        [output appendFormat:@"%02x", digest[i]];
+    }
+    return output;
+}
+
+- (NSString *)makeSureUUIDisUUID4:(NSString *)uuid {
+    if (uuid.length == 32) {
+        return uuid;
+    }
+    
+    NSString *hashHex = [self md5:uuid];
+    
+    NSString *uuid4 = [NSString stringWithFormat:@"%@-%@-4%@-a%@-%@",
+                       [hashHex substringWithRange:NSMakeRange(0, 8)],
+                       [hashHex substringWithRange:NSMakeRange(8, 4)],
+                       [hashHex substringWithRange:NSMakeRange(12, 3)],
+                       [hashHex substringWithRange:NSMakeRange(15, 3)],
+                       [hashHex substringWithRange:NSMakeRange(18, 12)]];
+    
+    return [uuid4 lowercaseString];
 }
 
 @end`
