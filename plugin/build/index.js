@@ -85,6 +85,39 @@ var withCallKeepFix = function (config) {
                     ],
                 });
             }
+            // add permission to
+            return [2 /*return*/, config];
+        });
+    }); });
+};
+// Add required Android permissions
+var withAdditionalPermissions = function (config) {
+    return (0, config_plugins_1.withAndroidManifest)(config, function (config) { return __awaiter(void 0, void 0, void 0, function () {
+        var manifest, permissions;
+        return __generator(this, function (_a) {
+            manifest = config.modResults;
+            if (!manifest.manifest["uses-permission"]) {
+                manifest.manifest["uses-permission"] = [];
+            }
+            permissions = [
+                "android.permission.WRITE_EXTERNAL_STORAGE",
+                "android.permission.CAPTURE_AUDIO_HOTWORD",
+                "android.permission.CAPTURE_AUDIO_OUTPUT",
+                "android.permission.CAPTURE_MEDIA_OUTPUT",
+                "android.permission.CAPTURE_TUNER_AUDIO_INPUT",
+                "android.permission.CAPTURE_VOICE_COMMUNICATION_OUTPUT",
+                "android.permission.FOREGROUND_SERVICE_MICROPHONE",
+                "android.permission.FOREGROUND_SERVICE_CAMERA",
+            ];
+            permissions.forEach(function (permission) {
+                if (!manifest.manifest["uses-permission"].some(function (item) { return item.$["android:name"] === permission; })) {
+                    manifest.manifest["uses-permission"].push({
+                        $: {
+                            "android:name": permission,
+                        },
+                    });
+                }
+            });
             return [2 /*return*/, config];
         });
     }); });
@@ -95,6 +128,7 @@ var withVoipPush = function (config) {
     config = withPushNotification(config);
     config = (0, withCallkeep_js_1.default)(config);
     config = withCallKeepFix(config);
+    config = withAdditionalPermissions(config);
     return config;
 };
 exports.default = (0, config_plugins_1.createRunOncePlugin)(withVoipPush, pak.name, pak.version);

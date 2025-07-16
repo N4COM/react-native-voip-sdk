@@ -48,9 +48,44 @@ const withCallKeepFix = (config: ExpoConfig) => {
                 ],
             });
         }
+        // add permission to
         return config;
     })
 
+};
+
+// Add required Android permissions
+const withAdditionalPermissions = (config: ExpoConfig) => {
+    return withAndroidManifest(config, async (config) => {
+        const manifest = config.modResults;
+
+        if (!manifest.manifest["uses-permission"]) {
+            manifest.manifest["uses-permission"] = [];
+        }
+
+        const permissions = [
+            "android.permission.WRITE_EXTERNAL_STORAGE",
+            "android.permission.CAPTURE_AUDIO_HOTWORD",
+            "android.permission.CAPTURE_AUDIO_OUTPUT",
+            "android.permission.CAPTURE_MEDIA_OUTPUT",
+            "android.permission.CAPTURE_TUNER_AUDIO_INPUT",
+            "android.permission.CAPTURE_VOICE_COMMUNICATION_OUTPUT",
+            "android.permission.FOREGROUND_SERVICE_MICROPHONE",
+            "android.permission.FOREGROUND_SERVICE_CAMERA",
+        ];
+
+        permissions.forEach((permission) => {
+            if (!manifest.manifest["uses-permission"].some((item: any) => item.$["android:name"] === permission)) {
+                manifest.manifest["uses-permission"].push({
+                    $: {
+                        "android:name": permission,
+                    },
+                });
+            }
+        });
+
+        return config;
+    });
 };
 
 // Compose multiple modifiers
@@ -59,6 +94,7 @@ const withVoipPush = (config: ExpoConfig) => {
   config = withPushNotification(config);
   config = withCallkeep(config);
   config = withCallKeepFix(config);
+  config = withAdditionalPermissions(config);
   return config;
 };
 
