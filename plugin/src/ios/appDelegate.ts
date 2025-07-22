@@ -22,6 +22,7 @@ export const withIosAppDelegate: ConfigPlugin = (config) => {
       modResults.contents = modResults.contents.replace(
         /#import "AppDelegate.h"/g,
         `#import "AppDelegate.h"
+        #import <CommonCrypto/CommonDigest.h>
 #import <PushKit/PushKit.h>
 #import "RNVoipPushNotificationManager.h"
 #import "RNCallKeep.h"`

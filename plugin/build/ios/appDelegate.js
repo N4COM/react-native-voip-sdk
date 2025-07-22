@@ -15,7 +15,7 @@ var withIosAppDelegate = function (config) {
         // if the above regex fails, we can use this one as a fallback:
         var fallbackInvocationLineMatcher = /-\s*\(BOOL\)\s*application:\s*\(UIApplication\s*\*\s*\)\s*\w+\s+didFinishLaunchingWithOptions:/g;
         if (!modResults.contents.includes("#import <PushKit/PushKit.h>")) {
-            modResults.contents = modResults.contents.replace(/#import "AppDelegate.h"/g, "#import \"AppDelegate.h\"\n#import <PushKit/PushKit.h>\n#import \"RNVoipPushNotificationManager.h\"\n#import \"RNCallKeep.h\"");
+            modResults.contents = modResults.contents.replace(/#import "AppDelegate.h"/g, "#import \"AppDelegate.h\"\n        #import <CommonCrypto/CommonDigest.h>\n#import <PushKit/PushKit.h>\n#import \"RNVoipPushNotificationManager.h\"\n#import \"RNCallKeep.h\"");
         }
         // Merging the method invocation block into the AppDelegate.m file
         // having problem with auth,  https://github.com/react-native-webrtc/react-native-callkeep/issues/735
