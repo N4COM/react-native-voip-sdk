@@ -1,6 +1,6 @@
 {
     "name": "react-native-voip-sdk",
-    "version": "0.0.13",
+    "version": "1.0.14",
     "description": "VoIP provider SDK for React Native using JsSIP and react-native-callkeep",
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
@@ -37,7 +37,6 @@
         "@react-native-async-storage/async-storage": "^2.2.0",
         "crypto-js": "^4.2.0",
         "eventemitter3": "^5.0.1",
-        "jssip": "https://github.com/men3malgmatti/JsSIP.git#n4com-app",
         "react-native-uuid": "^2.0.3"
     },
     "devDependencies": {
