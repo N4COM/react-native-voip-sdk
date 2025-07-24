@@ -30,7 +30,7 @@
         "react-native-background-timer": "^2.4.1",
         "react-native-callkeep": ">=4.3.14",
         "react-native-voip-push-notification": ">=3.3.2",
-        "react-native-webrtc": "https://github.com/nimbleape/react-native-webrtc.git#84-plus-dtmf-plus-field-trial"
+        "react-native-webrtc": ">=1.110.0"
     },
     "dependencies": {
         "@config-plugins/react-native-callkeep": "^9.0.0",
