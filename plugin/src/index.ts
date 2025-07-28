@@ -71,7 +71,6 @@ const withAdditionalPermissions = (config: ExpoConfig) => {
             "android.permission.CAPTURE_TUNER_AUDIO_INPUT",
             "android.permission.CAPTURE_VOICE_COMMUNICATION_OUTPUT",
             "android.permission.FOREGROUND_SERVICE_MICROPHONE",
-            "android.permission.FOREGROUND_SERVICE_CAMERA",
         ];
 
         permissions.forEach((permission) => {

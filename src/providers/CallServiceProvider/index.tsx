@@ -66,6 +66,13 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
     
     const startCall=(handle:string,name?:string, calldata?:string)=>{
         console.log("startCall from provider",handle,name);
+        //  make the handle follow the format 'sip:handle@alpitour-test.n4com.com'
+
+        if (!handle.startsWith('sip:')) {
+            handle = `sip:${handle}@alpitour-test.n4com.com`;
+        }
+        
+        console.log("handle after formatting",handle);
         
         callService.makeCall(handle,name,calldata);
     }
