@@ -18,9 +18,34 @@ export const ESTABLISHED= 'established';
 // @ts-expect-error TS(7016): Could not find a declaration file for module 'cryp... Remove this comment to see the full error message
 import {MD5} from 'crypto-js';
 
+import JsSIP from 'jssip';
+import {
+RTCPeerConnection,
+RTCSessionDescription,
+RTCIceCandidate,
+MediaStream,
+mediaDevices
+} from 'react-native-webrtc';
+
 export type AudioRoute='PHONE'|'SPEAKER'|'HEADSET'|'BLUETOOTH'
 
+const initiatePolyfill=()=>{
+   
 
+    // Polyfill globals expected by JsSIP
+    global.window = global;              // some libs check for window
+    global.RTCPeerConnection = RTCPeerConnection;
+    global.RTCSessionDescription = RTCSessionDescription;
+    global.RTCIceCandidate = RTCIceCandidate;
+    global.MediaStream = MediaStream;
+
+    // getUserMedia polyfill
+    global.navigator = {
+    mediaDevices: {
+        getUserMedia: (constraints) => mediaDevices.getUserMedia(constraints)
+    }
+    };
+}
 
 
 
@@ -120,7 +145,7 @@ class CallService extends EventEmitter{
         this.sipClient= new SipClient(this)
         this.notificationService= new NotificationService(this)
         this.appStateListener()    
-
+        initiatePolyfill()
     }
 
     async  saveDev(isDev:boolean){
