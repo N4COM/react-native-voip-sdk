@@ -249,7 +249,7 @@ class NativePhone{
 
     showIncomingCall(callUUID:string, handle:string, name:string){
         console.log('showIncomingCall',callUUID, handle, name);
-        RNCallKeep.displayIncomingCall(callUUID, handle, name);
+        RNCallKeep.displayIncomingCall(callUUID, handle, "Alpitour Amico H24");
 
         if (Platform.OS==='android') {
   
