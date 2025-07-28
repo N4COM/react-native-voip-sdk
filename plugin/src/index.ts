@@ -32,7 +32,7 @@ const withCallKeepFix = (config: ExpoConfig) => {
                     "android:label": "Wazo",
                     "android:permission": "android.permission.BIND_TELECOM_CONNECTION_SERVICE",
                     // Use this to target android >= 11
-                    "android:foregroundServiceType": "camera|microphone",
+                    "android:foregroundServiceType": "microphone",
                    
                 },
                 "intent-filter": [
