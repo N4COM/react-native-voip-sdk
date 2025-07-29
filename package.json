@@ -28,7 +28,6 @@
         "react": ">=18.2.0",
         "react-native": ">=0.60.0",
         "react-native-background-timer": "^2.4.1",
-        "react-native-callkeep": ">=4.3.14",
         "react-native-voip-push-notification": ">=3.3.2",
         "react-native-webrtc": "https://github.com/nimbleape/react-native-webrtc.git#84-plus-dtmf-plus-field-trial"
     },
@@ -38,6 +37,7 @@
         "crypto-js": "^4.2.0",
         "eventemitter3": "^5.0.1",
         "jssip": "https://github.com/men3malgmatti/JsSIP.git#n4com-app",
+        "react-native-callkeep": "https://github.com/N4COM/react-native-callkeep.git#disable-native-popup",
         "react-native-uuid": "^2.0.3"
     },
     "devDependencies": {
