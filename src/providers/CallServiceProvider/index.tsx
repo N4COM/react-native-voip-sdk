@@ -2,7 +2,7 @@ import React, { createContext,useContext,useEffect, useReducer, useState } from 
 import { Call, PendingCall } from "../../services/callService";
 import callService from "../../services/callService";
 import BackgroundTimer from 'react-native-background-timer';
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 
 
 export type TransferType='blind'|'attended';
@@ -68,7 +68,7 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
         console.log("startCall from provider",handle,name);
         //  make the handle follow the format 'sip:handle@alpitour-test.n4com.com'
 
-        if (!handle.startsWith('sip:')) {
+        if (!handle.startsWith('sip:') && Platform.OS === 'android') {
             handle = `sip:${handle}@alpitour-test.n4com.com`;
         }
         
