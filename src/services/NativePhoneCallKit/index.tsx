@@ -43,7 +43,7 @@ class NativePhone{
 
         NativePhone.instance = this;
         this.callService = callService;
-        this.init();
+        // this.init();
         
     }
 

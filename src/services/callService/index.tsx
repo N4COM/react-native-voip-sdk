@@ -160,6 +160,7 @@ class CallService extends EventEmitter{
         if (Platform.OS==='android') {
             this.notificationService.registerAndroid()
         }
+        this.nativePhone.init()
     }
 
     appStateListener(){
