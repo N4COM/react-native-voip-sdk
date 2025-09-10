@@ -129,31 +129,34 @@ class CallService extends EventEmitter{
 
     async getAudioRecordPermission(){
 
-        if (Platform.OS==='ios') {
-            return true
-        }
+        return new Promise((resolve,reject)=>{
 
-        const hasPermission=await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
-        if (hasPermission) {
-            return true
-        }
+            if (Platform.OS==='ios') {
+                resolve(true)
+                return
+            }
 
-        Alert.alert('Permission required', 'To show native call screen and receive calls, enable our calling account on the next screen.', [
-            {text: 'Cancel', style: 'cancel'},
-            {text: 'OK', onPress: async () => {
-                const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
-                if (!granted) {
-                    return false
+            PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO).then((hasPermission)=>{
+
+                if (hasPermission) {
+                    resolve(true)
+                    return
                 }
-                return true
-            }}
-        ])
-
-        const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
-        if (!granted) {
-            return false
-        }
-        return true
+                
+                Alert.alert('Permission required', 'To show native call screen and receive calls, enable our calling account on the next screen.', [
+                    {text: 'Cancel', style: 'cancel'},
+                    {text: 'OK', onPress: async () => {
+                        const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
+                        if (!granted) {
+                            resolve(false)
+                            return
+                        }
+                        resolve(true)
+                        return
+                    }}
+                ])  
+            })
+        })
     }
 
     async init(token:string, isDev?:boolean){
