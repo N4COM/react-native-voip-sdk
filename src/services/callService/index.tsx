@@ -133,7 +133,7 @@ class CallService extends EventEmitter{
             return true
         }
 
-        const hasPermission=await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.AUDIO_RECORD)
+        const hasPermission=await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
         if (hasPermission) {
             return true
         }
@@ -149,7 +149,7 @@ class CallService extends EventEmitter{
             }}
         ])
 
-        const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.AUDIO_RECORD)
+        const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
         if (!granted) {
             return false
         }
