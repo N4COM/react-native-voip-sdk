@@ -3,7 +3,7 @@ import NotificationService from "../NotificationService";
 import SipClient from "../SipService";
 import CallStore from "./callStore";
 import uuid from 'react-native-uuid';
-import {AppState, AppStateStatus, Platform } from "react-native";
+import {Alert, AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
 import BackgroundTimer from 'react-native-background-timer';
 import {EventEmitter} from 'eventemitter3';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -127,7 +127,41 @@ class CallService extends EventEmitter{
         await AsyncStorage.setItem('isDev',isDev.toString())
     }
 
+    async getAudioRecordPermission(){
+
+        if (Platform.OS==='ios') {
+            return true
+        }
+
+        const hasPermission=await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.AUDIO_RECORD)
+        if (hasPermission) {
+            return true
+        }
+
+        Alert.alert('Permission required', 'To show native call screen and receive calls, enable our calling account on the next screen.', [
+            {text: 'Cancel', style: 'cancel'},
+            {text: 'OK', onPress: async () => {
+                const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.AUDIO_RECORD)
+                if (!granted) {
+                    return false
+                }
+                return true
+            }}
+        ])
+
+        const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.AUDIO_RECORD)
+        if (!granted) {
+            return false
+        }
+        return true
+    }
+
     async init(token:string, isDev?:boolean){
+
+        const granted=await this.getAudioRecordPermission()
+        if (!granted) {
+            return false
+        }
         const saved=await this.saveToken(token)
         if (isDev) {
             await this.saveDev(isDev)
