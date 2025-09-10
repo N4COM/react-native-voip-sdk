@@ -143,7 +143,7 @@ class CallService extends EventEmitter{
                     return
                 }
                 
-                Alert.alert('Permission required', 'To show native call screen and receive calls, enable our calling account on the next screen.', [
+                Alert.alert('Permission required', 'To be able to use the call service, we need to access your microphone. Please grant the permission.', [
                     {text: 'Cancel', style: 'cancel'},
                     {text: 'OK', onPress: async () => {
                         const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
