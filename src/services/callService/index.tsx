@@ -143,8 +143,11 @@ class CallService extends EventEmitter{
                     return
                 }
                 
-                Alert.alert('Permission required', 'To be able to use the call service, we need to access your microphone. Please grant the permission.', [
-                    {text: 'Cancel', style: 'cancel'},
+                Alert.alert('Permesso richiesto', `
+                    Per effettuare o ricevere chiamate tramite l'app, è necessario autorizzare i permessi richiesti in seguito.
+                    Concedendo l'autorizzazione potrai utilizzare tutte le funzioni di chiamata senza interruzioni.
+                    `, [
+                    {text: 'Annulla', style: 'cancel'},
                     {text: 'OK', onPress: async () => {
                         const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
                         if (!granted) {
