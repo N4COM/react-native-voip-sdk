@@ -143,9 +143,7 @@ class CallService extends EventEmitter{
                     return
                 }
                 
-                Alert.alert('Permesso richiesto', `
-                    Per effettuare o ricevere chiamate tramite l'app, è necessario autorizzare i permessi richiesti in seguito.
-                    Concedendo l'autorizzazione potrai utilizzare tutte le funzioni di chiamata senza interruzioni.
+                Alert.alert('Permesso richiesto', `Per effettuare o ricevere chiamate tramite l'app, è necessario autorizzare i permessi richiesti in seguito.\nConcedendo l'autorizzazione potrai utilizzare tutte le funzioni di chiamata senza interruzioni.
                     `, [
                     {text: 'Annulla', style: 'cancel'},
                     {text: 'OK', onPress: async () => {
