@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import RNCallKeep, { CONSTANTS } from "react-native-callkeep";
 import { CallServiceType } from "../callService";
 import uuid from 'react-native-uuid';
+import promptsInstance from "../../prompts";
 // import InCallManager from 'react-native-incall-manager';
 // import { DeviceEventEmitter } from 'react-native';
 
@@ -30,6 +31,7 @@ class NativePhone{
     private static instance:NativePhone;
 
     private callStartingMap=new Map<string,string>();
+    public isInitialized:boolean=false;
 
     constructor(callService:CallServiceType) {
 
@@ -43,13 +45,35 @@ class NativePhone{
 
         NativePhone.instance = this;
         this.callService = callService;
-        // this.init();
-        
+
+        if (Platform.OS==='ios') {
+            this.init();
+            return;
+        }
+
+        this.checkPermissions().then((hasPermissions)=> {
+            console.log('hasPermissions',hasPermissions);
+            if (hasPermissions) {
+                this.init();
+            }
+        });
+
+    }
+
+    async checkPermissions(){
+        const isEnabled=await RNCallKeep.checkPhoneAccountEnabled();
+        console.log('====================================');
+        console.log('checkPermissions isEnabled',isEnabled);
+        console.log('====================================');
+        if (!isEnabled) {
+            return false;
+        }
+        return true;
     }
 
     async init(){
 
-
+        const prompts=promptsInstance.getPrompts()
 
         try {
             await RNCallKeep.setup({
@@ -57,10 +81,10 @@ class NativePhone{
                 appName: 'N4COM App',
               },
               android: {
-                alertTitle: 'Permissions required',
-                alertDescription: 'This application needs to access your phone accounts',
-                cancelButton: 'Cancel',
-                okButton: 'ok',
+                alertTitle: prompts.phoneAccountsPermissions.title,
+                alertDescription: prompts.phoneAccountsPermissions.body,
+                cancelButton: prompts.phoneAccountsPermissions.buttons.cancel,
+                okButton: prompts.phoneAccountsPermissions.buttons.ok,
                 foregroundService: {
                   channelId: 'com.buniq.n4com',
                   channelName: 'Foreground service for my app',
@@ -75,6 +99,7 @@ class NativePhone{
             RNCallKeep.canMakeMultipleCalls(false);
 
             this.registerEventsListeners();
+            this.isInitialized=true;
           } catch (error) {
             RNCallKeep.setAvailable(false);
             RNCallKeep.canMakeMultipleCalls(false);

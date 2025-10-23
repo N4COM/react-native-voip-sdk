@@ -7,6 +7,7 @@ import {Alert, AppState, AppStateStatus, PermissionsAndroid, Platform } from "re
 import BackgroundTimer from 'react-native-background-timer';
 import {EventEmitter} from 'eventemitter3';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import prompts from '../../prompts';
 
 
 
@@ -17,8 +18,10 @@ export const RINGING= 'ringing';
 export const ESTABLISHED= 'established';
 // @ts-expect-error TS(7016): Could not find a declaration file for module 'cryp... Remove this comment to see the full error message
 import {MD5} from 'crypto-js';
+import promptsInstance from "../../prompts";
 
 export type AudioRoute='PHONE'|'SPEAKER'|'HEADSET'|'BLUETOOTH'
+
 
 
 
@@ -142,20 +145,21 @@ class CallService extends EventEmitter{
                     resolve(true)
                     return
                 }
+
+                const prompts=promptsInstance.getPrompts()
                 
-                Alert.alert('Permesso richiesto', `Per effettuare o ricevere chiamate tramite l'app, è necessario autorizzare i permessi richiesti in seguito.\nConcedendo l'autorizzazione potrai utilizzare tutte le funzioni di chiamata senza interruzioni.
-                    `, [
-                    {text: 'Annulla', style: 'cancel'},
-                    {text: 'OK', onPress: async () => {
+                Alert.alert(prompts.initialPermissions.title, prompts.initialPermissions.body, [
+                    {text: prompts.initialPermissions.buttons.cancel, style: 'cancel'},
+                    {text: prompts.initialPermissions.buttons.ok, onPress: async () => {
                         const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
                         if (!granted) {
-                            resolve(false)
-                            return
+                            resolve(false);
+                            return;
                         }
-                        resolve(true)
-                        return
-                    }}
-                ])  
+                        resolve(true);
+                        return;
+                    }},
+                ]);
             })
         })
     }
@@ -198,7 +202,15 @@ class CallService extends EventEmitter{
         if (Platform.OS==='android') {
             this.notificationService.registerAndroid()
         }
-        this.nativePhone.init()
+        console.log('====================================');
+        console.log('nativePhone isInitialized',this.nativePhone.isInitialized);
+        console.log('====================================');
+        if (!this.nativePhone.isInitialized) {
+            console.log('====================================');
+            console.log('initiating native phone');
+            console.log('====================================');
+            this.nativePhone.init()
+        }
     }
 
     appStateListener(){

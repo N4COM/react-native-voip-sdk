@@ -3,6 +3,7 @@ import { Call, PendingCall } from "../../services/callService";
 import callService from "../../services/callService";
 import BackgroundTimer from 'react-native-background-timer';
 import { Alert, Platform } from "react-native";
+import promptsInstance from "../../prompts";
 
 
 export type TransferType='blind'|'attended';
@@ -157,11 +158,21 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
        });
 
        callService.addListener('callFailed', () => {
-             Alert.alert("Call Failed");
+            const prompts=promptsInstance.getPrompts()
+            Alert.alert(prompts.callFailed.title, prompts.callFailed.body, [
+                {text: prompts.callFailed.buttons.ok, onPress: () => {
+                    console.log("Call Failed button pressed");
+                }},
+             ]);
        });
 
        callService.addListener('outgoingCallFailed', () => {
-             Alert.alert("Outgoing Call Failed");
+            const prompts=promptsInstance.getPrompts()
+             Alert.alert(prompts.callFailed.title, prompts.callFailed.body, [
+                {text: prompts.callFailed.buttons.ok, onPress: () => {
+                    console.log("Outgoing Call Failed button pressed");
+                }},
+             ]);
        });
 
         return () => {
