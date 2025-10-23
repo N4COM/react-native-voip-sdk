@@ -1,5 +1,6 @@
 import React from "react";
 import { Call, PendingCall } from "../../services/callService";
+import { PromptsType } from "../../prompts";
 export type TransferType = 'blind' | 'attended';
 interface CallServiceContext {
     startCall: (handle: string, name?: string, calldata?: string) => void;
@@ -17,6 +18,7 @@ interface CallServiceContext {
     getAudioRoutes: () => Promise<void>;
     callServiceSipInitFailed: boolean;
     initiateCallService: (token: string, isDev?: boolean) => void;
+    setPermissionsPrompts: (prompts: PromptsType) => void;
 }
 declare const CallServiceContext: React.Context<CallServiceContext | null>;
 declare const CallServiceProvider: ({ children }: {

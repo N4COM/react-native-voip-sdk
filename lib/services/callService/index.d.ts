@@ -1,6 +1,7 @@
 import CallStore from "./callStore";
 import { AppStateStatus } from "react-native";
 import { EventEmitter } from 'eventemitter3';
+import { PromptsType } from '../../prompts';
 export declare const HELD = "held";
 export declare const CALL_PROGRESS = "call_progress";
 export declare const CONNECTING = "connecting";
@@ -54,6 +55,7 @@ declare class CallService extends EventEmitter {
     } | null;
     constructor();
     saveDev(isDev: boolean): Promise<void>;
+    setPermissionsPrompts(prompts: PromptsType): void;
     getAudioRecordPermission(): Promise<unknown>;
     init(token: string, isDev?: boolean): Promise<false | undefined>;
     saveToken(token: string): Promise<boolean>;

@@ -3,7 +3,7 @@ import { Call, PendingCall } from "../../services/callService";
 import callService from "../../services/callService";
 import BackgroundTimer from 'react-native-background-timer';
 import { Alert, Platform } from "react-native";
-import promptsInstance from "../../prompts";
+import promptsInstance, { PromptsType } from "../../prompts";
 
 
 export type TransferType='blind'|'attended';
@@ -24,6 +24,7 @@ interface CallServiceContext{
     getAudioRoutes:()=>Promise<void>;
     callServiceSipInitFailed:boolean;
     initiateCallService:(token:string , isDev?:boolean)=>void;
+    setPermissionsPrompts:(prompts:PromptsType)=>void;
 }
 
 
@@ -125,6 +126,10 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
         callService.removeSipCredentials();
     }
 
+    const setPermissionsPrompts=(prompts:PromptsType)=>{
+        callService.setPermissionsPrompts(prompts);
+    }
+
 
     useEffect(() => {
 
@@ -194,7 +199,7 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
             startCall,endCall,holdCall,swapCall,toggleMuteCall
             ,attendedTransferCall,blindTransferCall,sendDTMF,
             setAudioRoute,getAudioRoutes,pendingCall,
-            callState,callServiceSipInitFailed,initiateCallService,stopCallService}}>
+            callState,callServiceSipInitFailed,initiateCallService,stopCallService,setPermissionsPrompts}}>
             {children}
         </CallServiceContext.Provider>
     )

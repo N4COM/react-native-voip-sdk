@@ -7,7 +7,7 @@ import {Alert, AppState, AppStateStatus, PermissionsAndroid, Platform } from "re
 import BackgroundTimer from 'react-native-background-timer';
 import {EventEmitter} from 'eventemitter3';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import prompts from '../../prompts';
+import prompts, { PromptsType } from '../../prompts';
 
 
 
@@ -128,6 +128,10 @@ class CallService extends EventEmitter{
 
     async  saveDev(isDev:boolean){
         await AsyncStorage.setItem('isDev',isDev.toString())
+    }
+
+    setPermissionsPrompts(prompts:PromptsType){
+        promptsInstance.setPrompts(prompts)
     }
 
     async getAudioRecordPermission(){

@@ -3,7 +3,9 @@ declare class NativePhone {
     private callService;
     private static instance;
     private callStartingMap;
+    isInitialized: boolean;
     constructor(callService: CallServiceType);
+    checkPermissions(): Promise<boolean>;
     init(): Promise<void>;
     registerEventsListeners(): void;
     removeEventsListeners(): void;
