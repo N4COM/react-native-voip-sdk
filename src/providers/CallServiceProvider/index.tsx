@@ -117,8 +117,8 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
         await callService.setAudioRoute(audioRoute);
     }
 
-    const initiateCallService=(token:string , isDev?:boolean)=>{
-        callService.init(token, isDev);
+    const initiateCallService= async (token:string , isDev?:boolean)=>{
+        await callService.start(token, isDev);
     }
 
     const stopCallService=()=>{

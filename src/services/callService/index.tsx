@@ -168,7 +168,7 @@ class CallService extends EventEmitter{
         })
     }
 
-    async init(token:string, isDev?:boolean){
+    async start(token:string, isDev?:boolean){
 
         const granted=await this.getAudioRecordPermission()
         if (!granted) {
