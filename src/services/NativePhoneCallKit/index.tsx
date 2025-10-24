@@ -270,6 +270,7 @@ class NativePhone{
             return;
         }
         RNCallKeep.setCurrentCallActive(callUUID);
+        RNCallKeep.reportConnectedOutgoingCallWithUUID(callUUID);
     }
 
     showIncomingCall(callUUID:string, handle:string, name:string){
@@ -333,6 +334,7 @@ class NativePhone{
     startCall( callUUID:string,handle:string, name:string){
         RNCallKeep.startCall(callUUID, handle, name,'generic',false);
         RNCallKeep.updateDisplay(callUUID, name, handle);
+        RNCallKeep.reportConnectingOutgoingCallWithUUID(callUUID);
         this.callStartingMap.set(callUUID,name);
     }
 
