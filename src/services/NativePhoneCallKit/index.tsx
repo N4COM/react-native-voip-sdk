@@ -62,9 +62,7 @@ class NativePhone{
 
     async checkPermissions(){
         const isEnabled=await RNCallKeep.checkPhoneAccountEnabled();
-        console.log('====================================');
-        console.log('checkPermissions isEnabled',isEnabled);
-        console.log('====================================');
+
         if (!isEnabled) {
             return false;
         }

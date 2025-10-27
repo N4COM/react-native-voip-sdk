@@ -206,13 +206,8 @@ class CallService extends EventEmitter{
         if (Platform.OS==='android') {
             this.notificationService.registerAndroid()
         }
-        console.log('====================================');
-        console.log('nativePhone isInitialized',this.nativePhone.isInitialized);
-        console.log('====================================');
+
         if (!this.nativePhone.isInitialized) {
-            console.log('====================================');
-            console.log('initiating native phone');
-            console.log('====================================');
             this.nativePhone.init()
         }
     }
@@ -250,12 +245,10 @@ class CallService extends EventEmitter{
 
 
         if (call) {
-            console.log('callScreenDisplayed call',call);
             return
         }
 
         if (this.pendingCall&& this.pendingCall.callUUID !== callUUID &&this.pendingCallTimeout) {
-            console.log('callScreenDisplayed pendingCall',this.pendingCall);
             this.nativePhone?.reportCallEnded(this.pendingCall.callUUID,'Failed','local')
             BackgroundTimer.clearTimeout(this.pendingCallTimeout)
             this.pendingCall=undefined
@@ -265,10 +258,8 @@ class CallService extends EventEmitter{
 
 
         this.pendingCall={callUUID,handle,name,isAnswered:false}
-        console.log('callScreenDisplayed pendingCall',this.pendingCall);
         // auto destroy the call after 5 seconds
         this.pendingCallTimeout= BackgroundTimer.setTimeout(()=>{
-            console.log('callScreenDisplayed pendingCallTimeout');
             this.emit('callFailed')
             this.pendingCall=undefined
             this.nativePhone?.reportCallEnded(callUUID,'Failed','local')
@@ -576,11 +567,6 @@ class CallService extends EventEmitter{
 
 
     makeCall(handle:string, name?:string, calldata?:string){
-
-        console.log("makeCall",handle, name, calldata);
-    
-     
-        
 
         if (!this.canCall) {        
             console.log("makeCall failed");
