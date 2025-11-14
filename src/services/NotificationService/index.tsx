@@ -1,5 +1,5 @@
 import VoipPushNotification from 'react-native-voip-push-notification';
-import messaging from '@react-native-firebase/messaging';
+
 import { CallServiceType } from "../callService";
 import { Platform } from 'react-native';
 
@@ -80,8 +80,7 @@ class NotificationService {
         console.log('registerAndroid');
         console.log('====================================');
         try {
-            const fcmToken = await messaging().getToken();
-            this.registerPushToken(fcmToken,"a");
+     
         } catch (error) {
             console.log(error);
         }
