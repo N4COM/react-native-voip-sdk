@@ -32,7 +32,7 @@ declare class SipClient {
     handleSdpRTCSession(e: any): void;
     answerCall(sessionId: string): void;
     removeSession(sessionId: string): void;
-    endCall(sessionId: string): void;
+    endCall(sessionId: string, reason_phrase?: string, status_code?: number): void;
     startCall(handle: string, extraCallData?: string): any;
     holdCall(sessionId: string, isHeld: boolean): void;
     muteCall(sessionId: string, isMuted: boolean): void;

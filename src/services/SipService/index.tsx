@@ -298,14 +298,14 @@ class SipClient {
         this.sessionMap.delete(sessionId);
     }
 
-    endCall(sessionId:string){
+    endCall(sessionId:string,reason_phrase?:string, status_code?:number){
 
 
 
         const session=this.sessionMap.get(sessionId);
         if (session) {
             try{
-                session.terminate({status_code:603,reason_phrase:'Decline'});
+                session.terminate({status_code:status_code||603,reason_phrase:reason_phrase||'Decline'});
             }catch(e){
                 console.log('====================================');
                 console.log('error in endCall',e);
