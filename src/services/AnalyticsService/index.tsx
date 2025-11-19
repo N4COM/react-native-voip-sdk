@@ -25,10 +25,22 @@ class AnalyticsService {
             console.warn('AnalyticsService: Failed to initialize PostHog', error);
         }
     }
-
     trackEvent(eventName: string, properties?: Record<string, any>) {
-        if (this.posthog) {
-            this.posthog.capture(eventName, properties);
+        const track = () => {
+            try {
+                if (this.posthog) {
+                    this.posthog.capture(eventName, properties);
+                }
+            } catch (error) {
+                console.warn('AnalyticsService: Failed to track event', error);
+            }
+        };
+    
+        // Use queueMicrotask if available, otherwise fallback to setTimeout
+        if (typeof queueMicrotask !== 'undefined') {
+            queueMicrotask(track);
+        } else {
+            setTimeout(track, 0);
         }
     }
 

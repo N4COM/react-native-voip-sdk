@@ -181,6 +181,8 @@ class NativePhone{
         this.callService.startedCall(obj.handle,obj.callUUID,obj.name? obj.name:name);
         
         name ?? this.callStartingMap.delete(obj.callUUID);
+
+        this.callService.analyticsService.trackEvent('onNativeCallStart',{callUUID:obj.callUUID, handle:obj.handle, name:obj.name});
     }
 
     onNativeCallAnswer(callUUID:string){
@@ -204,11 +206,21 @@ class NativePhone{
 
     onNativeCallEnd(callUUID:string){
         this.callService.endCallByUUID(callUUID);
+        this.callService.analyticsService.trackEvent('onNativeCallEnd',{callUUID:callUUID});
     }
 
     onNativeCallLoad(events:{name:string,data:any}[]){
         
-        this.callService.analyticsService.trackEvent('loadedEvents',{events:events});
+        const eventSummary = {
+            count: events.length,
+            eventTypes: events.map(ev => ev.name),
+            callUUIDs: events
+                .map(ev => ev.data?.callUUID)
+                .filter(Boolean)
+        };
+        
+        this.callService.analyticsService.trackEvent('loadedEvents', eventSummary);
+    
 
         let endedCallsUUID= events.map((ev: {name:string,data:any}) => {
           if (ev.name==='RNCallKeepPerformEndCallAction') {
@@ -216,7 +228,6 @@ class NativePhone{
           }
           return null
         });
-        this.callService.analyticsService.trackEvent('endedCallsUUID',{endedCallsUUID:endedCallsUUID});
       
       events.forEach((element: {name:string,data:any}) => {
 
@@ -228,12 +239,10 @@ class NativePhone{
      
                   if (endedCallsUUID.indexOf(element.data.callUUID)=== -1 ) {
                       this.callService.callScreenDisplayed(element.data.callUUID,element.data.handle,element.data.localizedCallerName);
-                      this.callService.analyticsService.trackEvent('loadedIncomingCallScreen',{callUUID:element.data.callUUID, handle:element.data.handle, name:element.data.localizedCallerName});
                     }
                   break;
               case 'RNCallKeepPerformAnswerCallAction':
                   this.callService.preLaunchAnswerCall(element.data.callUUID);
-                  this.callService.analyticsService.trackEvent('loadedAnswerCallScreen',{callUUID:element.data.callUUID});
                   break;
             
               case 'RNCallKeepDidReceiveStartCallAction':
@@ -289,6 +298,8 @@ class NativePhone{
   
             this.onNativeCallDisplay({callUUID, handle, localizedCallerName:name, hasVideo:false, fromPushKit:null, payload:null });
         }
+
+        this.callService.analyticsService.trackEvent('showIncomingCall',{callUUID, handle, name});
       
     }  
 
@@ -298,11 +309,12 @@ class NativePhone{
         const causeCode= parseCauseCode(cause);
         RNCallKeep.reportEndCallWithUUID(callUUID,causeCode);
 
-
+        this.callService.analyticsService.trackEvent('reportCallEnded',{callUUID, cause, originator});
     }
 
     androidEndCallHandler(payload:any){
         RNCallKeep.endCall(payload.uuid);
+        this.callService.analyticsService.trackEvent('androidEndCallHandler',{callUUID:payload.uuid});
     }
 
     androidAnswerCallHandler(payload:any){

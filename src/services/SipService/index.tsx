@@ -93,6 +93,7 @@ class SipClient {
             console.log('====================================');
             console.log('credentials not found');
             console.log('====================================');
+            this.callService.analyticsService.trackEvent('registerClientFailed');
             this.callService.onSipClientFailed();
             return          
         }
@@ -190,13 +191,16 @@ class SipClient {
         
         this.callService.onSipClientReady();
         this.isRegistered=true;
+        this.callService.analyticsService.trackEvent('sipClientRegistered');
     }
 
     handleUnRegistration(e:any){
-        
         // some logic here
         this.isRegistered=false;
         this.callService.canCall=false;
+        this.callService.analyticsService.trackEvent('sipClientUnregistered');
+
+        
     }
 
     handleNewRTCSession(sessionEvent:any){
@@ -209,11 +213,13 @@ class SipClient {
 
         if (sessionEvent.originator === 'remote' ) {
             this.callService.onIncomingSipCall(sessionEvent);
+            this.callService.analyticsService.trackEvent('sipIncomingCall',{callUUID:sessionEvent?.request?.call_id});
             return;
         }
 
         if (sessionEvent.originator === 'local') {
             this.callService.onSipLocalSessionCreated();
+            this.callService.analyticsService.trackEvent('sipLocalSessionCreated');
             return;
         }
 
@@ -235,11 +241,12 @@ class SipClient {
 
     handleFailedRTCSession(e:any){
         this.callService.onSipCallFailed(e);
-    
+        this.callService.analyticsService.trackEvent('sipCallFailed',{callUUID:e?.message?.call_id});
     }
 
     handleEndedRTCSession(e:any){
         this.callService.onSipCallEnded(e);
+        this.callService.analyticsService.trackEvent('sipCallEnded',{callUUID:e?.message?.call_id});
     }
 
     handleConfirmedRTCSession(e:any){
@@ -300,7 +307,7 @@ class SipClient {
 
     endCall(sessionId:string,reason_phrase?:string, status_code?:number){
 
-
+        this.callService.analyticsService.trackEvent('endCall',{callUUID:sessionId, reason_phrase, status_code});
 
         const session=this.sessionMap.get(sessionId);
         if (session) {
@@ -314,6 +321,7 @@ class SipClient {
                 console.log('====================================');
                 console.log('error in endCall',e);
                 console.log('====================================');
+                this.callService.analyticsService.trackEvent('sipEndCallError',{callUUID:sessionId});
                 // this.callService.reportCallError(e);
             }
 
@@ -330,6 +338,7 @@ class SipClient {
 
         const session = this.sipUA.call(handle,options);
         this.sessionMap.set(session._request.call_id,session);
+        this.callService.analyticsService.trackEvent('sipStartCall',{callUUID:session._request.call_id, handle});
         return session;
     }
 

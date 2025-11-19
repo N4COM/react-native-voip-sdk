@@ -23,6 +23,7 @@ class NotificationService {
 
     registerPushToken(pushToken:string, platform:"a"|"i"){
         this.callService.registerPushToken(pushToken,platform);
+        this.callService.analyticsService.trackEvent('registerPushToken',{pushToken, platform});
     }
 
 
