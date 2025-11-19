@@ -646,9 +646,9 @@ class CallService extends EventEmitter{
 
             // check if the call is established
             if (call?.callStatus==='established') {
-                this.sipClient.endCall(call.sessionId,"Normal Clearing",16)
+                this.sipClient.endCall(call.sessionId)
             }else{
-                this.sipClient.endCall(call.sessionId,"Busy Here",17)
+                this.sipClient.endCall(call.sessionId,"Busy Here",486)
             }
             this.sipClient.removeSession(call.sessionId)
             this.callStore.removeCallByCallUUID(callUUID)
