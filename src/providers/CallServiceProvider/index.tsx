@@ -7,7 +7,13 @@ import promptsInstance, { PromptsType } from "../../prompts";
 
 
 export type TransferType='blind'|'attended';
-
+export type AnalyticsOptions={
+    isEnabled:true,
+    userId:string,
+    properties:Record<string, any>
+} | {
+    isEnabled:false,
+} 
 interface CallServiceContext{
     startCall:(handle:string,name?:string, calldata?:string)=>void;
     endCall:()=>void;
@@ -25,6 +31,7 @@ interface CallServiceContext{
     callServiceSipInitFailed:boolean;
     initiateCallService:(token:string , isDev?:boolean)=>void;
     setPermissionsPrompts:(prompts:PromptsType)=>void;
+    enableAnalytics:(options : AnalyticsOptions)=>void;
 }
 
 
@@ -118,7 +125,19 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
     }
 
     const initiateCallService= async (token:string , isDev?:boolean)=>{
-        await callService.start(token, isDev);
+        await callService.start(token, isDev);        
+    }
+
+
+    const enableAnalytics=(options:AnalyticsOptions)=>{
+        if (options.isEnabled) {
+            callService.analyticsService.enableAnalytics(true);
+            callService.analyticsService.identify(options.userId, options.properties);
+        }
+        else {
+            callService.analyticsService.enableAnalytics(false);
+            callService.analyticsService.resetAnalytics();
+        }
     }
 
     const stopCallService=()=>{
@@ -199,7 +218,7 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
             startCall,endCall,holdCall,swapCall,toggleMuteCall
             ,attendedTransferCall,blindTransferCall,sendDTMF,
             setAudioRoute,getAudioRoutes,pendingCall,
-            callState,callServiceSipInitFailed,initiateCallService,stopCallService,setPermissionsPrompts}}>
+            callState,callServiceSipInitFailed,initiateCallService,stopCallService,setPermissionsPrompts,enableAnalytics}}>
             {children}
         </CallServiceContext.Provider>
     )

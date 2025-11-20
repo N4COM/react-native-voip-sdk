@@ -2,9 +2,11 @@ import PostHog from 'posthog-react-native';
 import { API_KEY, API_HOST } from './API';
 
 class AnalyticsService {
+
     private posthog: PostHog | null = null;
     private static instance: AnalyticsService | null = null;
-    
+    public enabled:boolean=false
+
     private constructor() {
         this.init();
     }
@@ -25,7 +27,17 @@ class AnalyticsService {
             console.warn('AnalyticsService: Failed to initialize PostHog', error);
         }
     }
+
+    enableAnalytics(enabled:boolean) {
+        this.enabled = enabled;
+    }
+
     trackEvent(eventName: string, properties?: Record<string, any>) {
+
+        if (!this.enabled) {
+            return;
+        }
+
         const track = () => {
             try {
                 if (this.posthog) {
@@ -45,12 +57,27 @@ class AnalyticsService {
     }
 
     identify(userId: string, properties?: Record<string, any>) {
+        if (!this.enabled) {
+            return;
+        }
+
         if (this.posthog) {
             this.posthog.identify(userId, properties);
         }
     }
 
+    resetAnalytics(){
+        
+        if (this.posthog) {
+            this.posthog.reset();
+        }
+    }
+        
     captureException(error: Error, context?: Record<string, any>) {
+        if (!this.enabled) {
+            return;
+        }
+
         if (this.posthog) {
             this.posthog.capture('error', {
                 ...context,
