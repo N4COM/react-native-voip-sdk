@@ -1,5 +1,6 @@
 import PostHog from 'posthog-react-native';
 import { API_KEY, API_HOST } from './API';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 class AnalyticsService {
 
@@ -26,13 +27,22 @@ class AnalyticsService {
         } catch (error) {
             console.warn('AnalyticsService: Failed to initialize PostHog', error);
         }
+
+        AsyncStorage.getItem('analyticsEnabled').then((analyticsEnabled) => {
+            if (analyticsEnabled === 'true') {
+                this.enabled = true;
+                return
+            }
+        });
     }
 
     enableAnalytics(enabled:boolean) {
         this.enabled = enabled;
+        AsyncStorage.setItem('analyticsEnabled', this.enabled.toString());
     }
 
     trackEvent(eventName: string, properties?: Record<string, any>) {
+        
 
         if (!this.enabled) {
             return;
@@ -71,6 +81,7 @@ class AnalyticsService {
         if (this.posthog) {
             this.posthog.reset();
         }
+        AsyncStorage.removeItem('analyticsEnabled');
     }
         
     captureException(error: Error, context?: Record<string, any>) {
