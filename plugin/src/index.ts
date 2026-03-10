@@ -1,4 +1,4 @@
-import { createRunOncePlugin, withAndroidManifest, withEntitlementsPlist } from "@expo/config-plugins";
+import { createRunOncePlugin, withAndroidManifest, withEntitlementsPlist, withPodfile } from "@expo/config-plugins";
 import { ExpoConfig } from "@expo/config-types";
 import { withIosAppDelegate } from "./ios";
 import { getMainApplicationOrThrow } from "@expo/config-plugins/build/android/Manifest";
@@ -54,6 +54,26 @@ const withCallKeepFix = (config: ExpoConfig) => {
 
 };
 
+const withFirebaseModularHeadersFix = (config: ExpoConfig) => {
+    return withPodfile(config, async (config) => {
+        if (config.modResults.contents.includes("use_modular_headers!")) {
+            return config;
+        }
+
+        const platformLineMatcher = /(platform\s*:ios[^\n]*\n)/;
+        if (platformLineMatcher.test(config.modResults.contents)) {
+            config.modResults.contents = config.modResults.contents.replace(
+                platformLineMatcher,
+                `$1use_modular_headers!\n`
+            );
+        } else {
+            config.modResults.contents = `use_modular_headers!\n${config.modResults.contents}`;
+        }
+
+        return config;
+    });
+};
+
 // Add required Android permissions
 const withAdditionalPermissions = (config: ExpoConfig) => {
     return withAndroidManifest(config, async (config) => {
@@ -90,6 +110,7 @@ const withAdditionalPermissions = (config: ExpoConfig) => {
 // Compose multiple modifiers
 const withVoipPush = (config: ExpoConfig) => {
   config = withIosAppDelegate(config);
+  config = withFirebaseModularHeadersFix(config);
   config = withPushNotification(config);
   config = withCallkeep(config);
   config = withCallKeepFix(config);

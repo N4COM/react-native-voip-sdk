@@ -90,6 +90,24 @@ var withCallKeepFix = function (config) {
         });
     }); });
 };
+var withFirebaseModularHeadersFix = function (config) {
+    return (0, config_plugins_1.withPodfile)(config, function (config) { return __awaiter(void 0, void 0, void 0, function () {
+        var platformLineMatcher;
+        return __generator(this, function (_a) {
+            if (config.modResults.contents.includes("use_modular_headers!")) {
+                return [2 /*return*/, config];
+            }
+            platformLineMatcher = /(platform\s*:ios[^\n]*\n)/;
+            if (platformLineMatcher.test(config.modResults.contents)) {
+                config.modResults.contents = config.modResults.contents.replace(platformLineMatcher, "$1use_modular_headers!\n");
+            }
+            else {
+                config.modResults.contents = "use_modular_headers!\n".concat(config.modResults.contents);
+            }
+            return [2 /*return*/, config];
+        });
+    }); });
+};
 // Add required Android permissions
 var withAdditionalPermissions = function (config) {
     return (0, config_plugins_1.withAndroidManifest)(config, function (config) { return __awaiter(void 0, void 0, void 0, function () {
@@ -124,6 +142,7 @@ var withAdditionalPermissions = function (config) {
 // Compose multiple modifiers
 var withVoipPush = function (config) {
     config = (0, ios_1.withIosAppDelegate)(config);
+    config = withFirebaseModularHeadersFix(config);
     config = withPushNotification(config);
     config = (0, withCallkeep_js_1.default)(config);
     config = withCallKeepFix(config);
