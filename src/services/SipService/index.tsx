@@ -1,5 +1,6 @@
 import { customFetch } from "../../API/api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BackgroundTimer from 'react-native-background-timer';
 import SoftPhone from "../../classes/softPhone";
 import { Call, CallServiceType } from "../callService";
 
@@ -32,7 +33,7 @@ const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefin
             userName:resData.data.username,
             displayName:resData.data.displayName,
             displayNumber:resData.data.displayNumber,
-            webSocket:resData.data.wssUrl
+            webSocket:resData.data.websocket
         }
         
         return{
@@ -59,7 +60,7 @@ type SoftPhoneCredentials = {
     userName: string,
     password: string,
     realm: string,
-    ownerID?: string,
+    owner_id?: string,
     webSocket: string
 }
 
@@ -85,9 +86,10 @@ class SipClient {
     }
 
     async registerClient(){
+        if (this.sipUA && this.sipUA.isConnected()) {
+            return;
+        }
 
-
-        
         const credentials= await getSoftPhoneCredentials();
         if(!credentials){
             console.log('====================================');
@@ -97,16 +99,16 @@ class SipClient {
             this.callService.onSipClientFailed();
             return          
         }
-        const {ua,ownerID}= new SoftPhone(credentials.userName, credentials.password, credentials.realm, credentials.ownerID, credentials.webSocket);
+        const {ua,ownerID}= new SoftPhone(credentials.userName, credentials.password, credentials.realm, credentials.owner_id, credentials.webSocket);
         this.configurationParams=credentials;
         this.sipUA=ua;
         this.init();
         this.registerEventsListeners();
         this.callService.setCallServiceDeviceId(credentials.id);
-        this.customRegister();
+        this.customRegister(ownerID);
     }
 
-    async customRegister(){
+    async customRegister(ownerID:string){
 
         const registerCallback=()=>{
 
@@ -127,9 +129,9 @@ class SipClient {
 
 
         this.sipUA.registrator().setExtraContactParams({
-            'app-id': isDev ? "alpitour-test" : "alpitour",
-            'pn-tok':  `${this.platform}:${this.pushToken}`,
-            'pn-type': "n4com"
+            'app-id': "svoolaz",
+            'pn-tok': ownerID,
+            'pn-type': "n4com"  
         });
 
         if(this.sipUA.isConnected()){
@@ -147,8 +149,8 @@ class SipClient {
             return;
         }
         this.platform=platform;
-        this.pushToken=pushToken;
-        this.customRegister();
+        // this.pushToken=pushToken;
+        // this.customRegister();
     }
 
     init(){
@@ -159,6 +161,10 @@ class SipClient {
             console.log('====================================');
             return
             
+        }
+
+        if (this.sipUA.isConnected()) {
+            return;
         }
 
         this.sipUA.start();
@@ -258,10 +264,10 @@ class SipClient {
     handleIceCandidateRTCSession(e:any){
 
         if (this.iceTimeOutId) {
-            clearTimeout(this.iceTimeOutId);
+            BackgroundTimer.clearTimeout(this.iceTimeOutId);
         }
         //@ts-ignore
-        this.iceTimeOutId= setTimeout(e.ready,500);
+        this.iceTimeOutId = BackgroundTimer.setTimeout(e.ready, 500);
     }
 
     handlePeerConnectionRTCSession(e:any){
@@ -277,7 +283,7 @@ class SipClient {
     handleAcceptedRTCSession(e:any){
 
         if (this.iceTimeOutId) {
-            clearTimeout(this.iceTimeOutId);
+            BackgroundTimer.clearTimeout(this.iceTimeOutId);
             this.iceTimeOutId=null; 
         }
         this.callService.onSipCallAccepted(e);
@@ -294,7 +300,14 @@ class SipClient {
 
     answerCall(sessionId:string){ 
 
+        console.log('====================================');
+        console.log('answerCall in SipService',sessionId);
+        console.log('====================================');
+
         const session=this.sessionMap.get(sessionId);
+        console.log('====================================');
+        console.log('session',session);
+        console.log('====================================');
         if (session) {
             session.answer(callOptions);
         }

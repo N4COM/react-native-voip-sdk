@@ -5,10 +5,13 @@ import messaging from '@react-native-firebase/messaging';
 
 const remoteMessageHandler=async (remoteMessage: any) => {
     
-
-    const additionalData=remoteMessage.data;
+    const {a:additionalData,i}=await JSON.parse(remoteMessage.data.custom);
 
     callServiceInstance.onIncomingFcmCall(additionalData.uuid,additionalData.handle,additionalData.callerName);
+
+    // const additionalData=remoteMessage.data;
+
+    // callServiceInstance.onIncomingFcmCall(additionalData.uuid,additionalData.handle,additionalData.callerName);
 
     return Promise.resolve();
 

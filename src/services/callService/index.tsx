@@ -602,7 +602,9 @@ class CallService extends EventEmitter{
 
     answeredCall(callUUID:string){
 
-   
+    console.log('====================================');
+    console.log('answeredCall in callService',callUUID);
+    console.log('====================================');
     
         if (this.pendingCall&& this.pendingCall.callUUID===callUUID) {
             this.pendingCall.isAnswered=true

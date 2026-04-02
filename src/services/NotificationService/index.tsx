@@ -2,7 +2,40 @@ import VoipPushNotification from 'react-native-voip-push-notification';
 import messaging from '@react-native-firebase/messaging';
 import { CallServiceType } from "../callService";
 import { Platform } from 'react-native';
+import OneSignal from 'react-native-onesignal';
 
+export const registerToken= async (token: any,deviceType: any)=> {
+    const deviceState= await OneSignal.getDeviceState();
+
+    const data= {
+      app_id:"541ab59a-c9a9-4906-ace3-ddee1b3a5d58",
+      identifier:token,
+      device_type:deviceType==="a"?1:0,
+      external_user_id:deviceState?.userId,
+      test_type:1,
+    };
+  
+
+    console.log('====================================');
+    console.log('data',data);
+    console.log('====================================');
+  try {
+    const res= await fetch('https://onesignal.com/api/v1/players',{
+      method:'POST',
+      headers:{
+        'content-type': 'application/json'
+      },
+      body:JSON.stringify(data)
+    }) 
+    if (!res.ok) {
+      const resData=await res.json();
+      console.log(resData);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+     
+}
 
 class NotificationService {
 
@@ -15,15 +48,46 @@ class NotificationService {
 
     init() {
         this.registerVoipListeners();
-
+        this.registerOneSignalSdk();
         if (Platform.OS==='android') {
             this.registerAndroid();
         }
     }
 
+    registerOneSignalSdk() {
+         
+        OneSignal.setLogLevel(6, 0);
+        OneSignal.setAppId("9d89f880-1565-42af-be2b-b33f43b114cc");
+        
+        //Prompt for push on iOS
+        OneSignal.promptForPushNotificationsWithUserResponse(response => {
+        // console.log("Prompt response:", response);
+        });
+
+        //Method for handling notifications received while app in foreground
+        OneSignal.setNotificationWillShowInForegroundHandler(notificationReceivedEvent => {
+        // console.log("OneSignal: notification will show in foreground:", notificationReceivedEvent);
+        let notification = notificationReceivedEvent.getNotification();
+        // console.log("notification: ", notification);
+        const data = notification.additionalData;
+        // console.log("additionalData: ", data);
+        // Complete with null means don't show a notification.
+        // notificationReceivedEvent.complete(notification);
+        notificationReceivedEvent.complete();
+
+        });
+
+        //Method for handling notifications opened
+        OneSignal.setNotificationOpenedHandler(notification => {
+        // console.log("OneSignal: notification opened:", notification);
+        });
+    }
+
+
     registerPushToken(pushToken:string, platform:"a"|"i"){
-        this.callService.registerPushToken(pushToken,platform);
-        this.callService.analyticsService.trackEvent('registerPushToken',{pushToken, platform});
+        // this.callService.registerPushToken(pushToken,platform);
+        // this.callService.analyticsService.trackEvent('registerPushToken',{pushToken, platform});
+        registerToken(pushToken,platform);
     }
 
 

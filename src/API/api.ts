@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const getBaseURL=async ()=>{
     const isDev=await AsyncStorage.getItem('isDev')
-    const url = isDev ? 'https://alpitour-test.n4com.com/api' : 'https://alpitour.n4com.com/api'
+    const url = 'https://middleware.n4com.com/api/pbx/v1/users/me'
     return url
 }
 
@@ -31,6 +31,7 @@ const updateHeaders = async (options: any, isTokenRequired =true) => {
     const myHeaders = new Headers({
         'Accept':'application/json',
         'Content-Type':'application/json',
+
     });
 
     const token=await waitForToken()

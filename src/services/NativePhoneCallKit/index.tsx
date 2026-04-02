@@ -188,7 +188,9 @@ class NativePhone{
     onNativeCallAnswer(callUUID:string){
 
       
-      
+      console.log('====================================');
+      console.log('onNativeCallAnswer',callUUID);
+      console.log('====================================');
    
       try {
             this.callService.answeredCall(callUUID);
@@ -292,7 +294,7 @@ class NativePhone{
 
     showIncomingCall(callUUID:string, handle:string, name:string){
         console.log('showIncomingCall',callUUID, handle, name);
-        RNCallKeep.displayIncomingCall(callUUID, handle, "Alpitour Amico H24");
+        RNCallKeep.displayIncomingCall(callUUID, handle, handle);
 
         if (Platform.OS==='android') {
   
