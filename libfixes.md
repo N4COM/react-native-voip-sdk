@@ -59,3 +59,19 @@ and call OneSignal.addTrigger(key, value)
 Notes / limitations
 This is a local node_modules patch (it will be overwritten on reinstall unless you formalize it with something like patch-package).
 Your rebuild attempts also hit an unrelated blocker: Gradle can’t reach services.gradle.org (UnknownHostException). Once networking is resolved, the build can proceed and you can verify runtime behavior.
+
+
+Summary: react-native-callkeep + TurboModules on React Native 0.81
+Problem
+On Android, React Native’s TurboModule layer only allows one native bridge method per JavaScript name. react-native-callkeep’s RNCallKeepModule exposed overloaded @ReactMethod pairs for the same logical API:
+
+displayIncomingCall(uuid, number, name) and displayIncomingCall(..., hasVideo)
+startCall(uuid, number, name) and startCall(..., hasVideo)
+Both overloads map to the same JS method name (displayIncomingCall, startCall), so TurboModule parsing failed with errors like “Module exports two methods to JavaScript with the same name” when the module loaded (often triggered by require("react-native-callkeep") from your VoIP SDK).
+
+Fix
+In RNCallKeepModule.java:
+
+Removed @ReactMethod from the 3-argument overloads of displayIncomingCall and startCall.
+Kept @ReactMethod on the 4-argument versions (…, boolean hasVideo), which match what the library’s JS already calls on Android (it always passes hasVideo).
+The shorter overloads stay as plain Java helpers that delegate to the 4-arg / full implementation, so behavior stays the same; only what gets exported to JS is deduplicated.
