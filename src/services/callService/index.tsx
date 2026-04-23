@@ -242,7 +242,10 @@ class CallService extends EventEmitter{
 
     callScreenDisplayed(callUUID:string,handle:string,name:string){
        
-       
+        console.log('====================================');
+        console.log('callScreenDisplayed in callService',callUUID,handle,name);
+        console.log('====================================');
+
         const call=this.callStore.getCallByCallUUID(callUUID);
 
 
@@ -250,14 +253,26 @@ class CallService extends EventEmitter{
             return
         }
 
-        if (this.pendingCall&& this.pendingCall.callUUID !== callUUID &&this.pendingCallTimeout) {
+        if (this.pendingCall && this.pendingCall.callUUID === callUUID && this.pendingCallTimeout !== undefined) {
+            console.log('====================================');
+            console.log('callScreenDisplayed in callService: duplicate for same UUID, skipping',callUUID);
+            console.log('====================================');
+            return
+        }
+
+        if (this.pendingCall && this.pendingCall.callUUID !== callUUID) {
+            console.log('====================================');
+            console.log('reportCallEnded in callService for pending call',this.pendingCall.callUUID,'Failed','local');
+            console.log('====================================');
             this.nativePhone?.reportCallEnded(this.pendingCall.callUUID,'Failed','local')
-            BackgroundTimer.clearTimeout(this.pendingCallTimeout)
             this.pendingCall=undefined
-            this.pendingCallTimeout=undefined
             this.emit('callPending',this.pendingCall)
         }
 
+        if (this.pendingCallTimeout !== undefined) {
+            BackgroundTimer.clearTimeout(this.pendingCallTimeout)
+            this.pendingCallTimeout=undefined
+        }
 
         this.pendingCall={callUUID,handle,name,isAnswered:false}
         // auto destroy the call after 5 seconds
@@ -268,6 +283,9 @@ class CallService extends EventEmitter{
             this.pendingCallTimeout=undefined
             this.emit('callPending',this.pendingCall)
             this.callCleanUp()
+            console.log('====================================');
+            console.log('reportCallEnded in callService for pending call timeout',callUUID,'Failed','local');
+            console.log('====================================');
         },5000);
 
         this.sipClient.init()
@@ -316,10 +334,19 @@ class CallService extends EventEmitter{
 
 
         if (sessionEvent.originator === 'remote' && (!this.canCall || this.callConnectingUUID || this.callStore.callUUIDMap.size>1)) {
+
+            console.log('====================================');
+            console.log('onIncomingSipCall in callService for remote call blocked');
+            console.log('====================================');
         
             this.sipClient.endCall(sessionEvent.request.call_id)
             return
         }
+
+
+        console.log('====================================');
+        console.log('onIncomingSipCall in callService',sessionEvent.request.call_id);
+        console.log('====================================');
 
         let callUUID=this.makeSureUUIDisUUID4(sessionEvent.request.call_id);
         let showIncomingCallScreen=true;
@@ -331,6 +358,9 @@ class CallService extends EventEmitter{
       
        
         if(this.pendingCall&&this.pendingCallTimeout&& this.pendingCall.callUUID===this.makeSureUUIDisUUID4(sessionEvent.request.call_id)){
+            console.log('====================================');
+            console.log('onIncomingSipCall in callService for pending call',this.pendingCall.callUUID);
+            console.log('====================================');
             callUUID=this.pendingCall.callUUID
             name=this.pendingCall.name      
             isAnswered=this.pendingCall.isAnswered
@@ -340,6 +370,9 @@ class CallService extends EventEmitter{
             this.pendingCallTimeout=undefined
         }
         if (this.pendingCall&& this.pendingCallTimeout&& this.pendingCall.callUUID!==this.makeSureUUIDisUUID4(sessionEvent.request.call_id)) {
+            console.log('====================================');
+            console.log('onIncomingSipCall in callService for pending call mismatch',this.pendingCall.callUUID);
+            console.log('====================================');
             this.nativePhone?.reportCallEnded(this.pendingCall.callUUID,'Failed','local')
             this.pendingCall=undefined
             BackgroundTimer.clearTimeout(this.pendingCallTimeout)
@@ -489,7 +522,9 @@ class CallService extends EventEmitter{
 
     onIncomingFcmCall(callUUID:string,handle:string,name:string){
 
-        
+        console.log('====================================');
+        console.log('onIncomingFcmCall in callService',callUUID,handle,name);
+        console.log('====================================');
         
         this.nativePhone?.showIncomingCall(callUUID,handle,name)
 
@@ -671,9 +706,13 @@ class CallService extends EventEmitter{
         }
     }
 
-    // preLaunchStartCall(handle:string,callUUID:string,name:string){
-    
-    // }
+    preLaunchStartCall(_handle:string,_callUUID:string,_name:string){
+        // no-op stub for self-managed test; APP wires contact resolution here
+    }
+
+    reportCallError(error:unknown){
+        console.warn('callService.reportCallError', error);
+    }
 
     muteCall(){
 

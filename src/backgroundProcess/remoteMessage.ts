@@ -9,6 +9,10 @@ const remoteMessageHandler=async (remoteMessage: any) => {
 
     callServiceInstance.onIncomingFcmCall(additionalData.uuid,additionalData.handle,additionalData.callerName);
 
+    console.log('====================================');
+    console.log('remoteMessage',remoteMessage);
+    console.log('====================================');
+
     // const additionalData=remoteMessage.data;
 
     // callServiceInstance.onIncomingFcmCall(additionalData.uuid,additionalData.handle,additionalData.callerName);

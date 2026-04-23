@@ -139,6 +139,49 @@ var withAdditionalPermissions = function (config) {
         });
     }); });
 };
+// Wire react-native-incoming-call manifest requirements:
+// - register com.incomingcall.UnlockScreenActivity inside <application>
+// - add extra permissions needed by the full-screen incoming-call activity
+var withIncomingCallManifest = function (config) {
+    return (0, config_plugins_1.withAndroidManifest)(config, function (config) { return __awaiter(void 0, void 0, void 0, function () {
+        var manifest, permissions, app, unlockActivityName;
+        return __generator(this, function (_a) {
+            manifest = config.modResults;
+            if (!manifest.manifest["uses-permission"]) {
+                manifest.manifest["uses-permission"] = [];
+            }
+            permissions = [
+                "android.permission.SYSTEM_ALERT_WINDOW",
+                "android.permission.USE_FULL_SCREEN_INTENT",
+                "android.permission.WAKE_LOCK",
+                "android.permission.VIBRATE",
+                "android.permission.FOREGROUND_SERVICE",
+            ];
+            permissions.forEach(function (permission) {
+                if (!manifest.manifest["uses-permission"].some(function (item) { return item.$["android:name"] === permission; })) {
+                    manifest.manifest["uses-permission"].push({
+                        $: {
+                            "android:name": permission,
+                        },
+                    });
+                }
+            });
+            app = (0, Manifest_1.getMainApplicationOrThrow)(manifest);
+            if (!Array.isArray(app.activity)) {
+                app.activity = [];
+            }
+            unlockActivityName = "com.incomingcall.UnlockScreenActivity";
+            if (!app.activity.some(function (item) { return item.$["android:name"] === unlockActivityName; })) {
+                app.activity.push({
+                    $: {
+                        "android:name": unlockActivityName,
+                    },
+                });
+            }
+            return [2 /*return*/, config];
+        });
+    }); });
+};
 // Compose multiple modifiers
 var withVoipPush = function (config) {
     config = (0, ios_1.withIosAppDelegate)(config);
@@ -147,6 +190,7 @@ var withVoipPush = function (config) {
     config = (0, withCallkeep_js_1.default)(config);
     config = withCallKeepFix(config);
     config = withAdditionalPermissions(config);
+    config = withIncomingCallManifest(config);
     return config;
 };
 exports.default = (0, config_plugins_1.createRunOncePlugin)(withVoipPush, pak.name, pak.version);

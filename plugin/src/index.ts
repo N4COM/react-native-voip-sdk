@@ -107,6 +107,52 @@ const withAdditionalPermissions = (config: ExpoConfig) => {
     });
 };
 
+// Wire react-native-incoming-call manifest requirements:
+// - register com.incomingcall.UnlockScreenActivity inside <application>
+// - add extra permissions needed by the full-screen incoming-call activity
+const withIncomingCallManifest = (config: ExpoConfig) => {
+    return withAndroidManifest(config, async (config) => {
+        const manifest = config.modResults;
+
+        if (!manifest.manifest["uses-permission"]) {
+            manifest.manifest["uses-permission"] = [];
+        }
+
+        const permissions = [
+            "android.permission.SYSTEM_ALERT_WINDOW",
+            "android.permission.USE_FULL_SCREEN_INTENT",
+            "android.permission.WAKE_LOCK",
+            "android.permission.VIBRATE",
+            "android.permission.FOREGROUND_SERVICE",
+        ];
+
+        permissions.forEach((permission) => {
+            if (!manifest.manifest["uses-permission"].some((item: any) => item.$["android:name"] === permission)) {
+                manifest.manifest["uses-permission"].push({
+                    $: {
+                        "android:name": permission,
+                    },
+                });
+            }
+        });
+
+        const app = getMainApplicationOrThrow(manifest);
+        if (!Array.isArray(app.activity)) {
+            app.activity = [];
+        }
+        const unlockActivityName = "com.incomingcall.UnlockScreenActivity";
+        if (!app.activity.some((item: any) => item.$["android:name"] === unlockActivityName)) {
+            app.activity.push({
+                $: {
+                    "android:name": unlockActivityName,
+                },
+            } as any);
+        }
+
+        return config;
+    });
+};
+
 // Compose multiple modifiers
 const withVoipPush = (config: ExpoConfig) => {
   config = withIosAppDelegate(config);
@@ -115,6 +161,7 @@ const withVoipPush = (config: ExpoConfig) => {
   config = withCallkeep(config);
   config = withCallKeepFix(config);
   config = withAdditionalPermissions(config);
+  config = withIncomingCallManifest(config);
   return config;
 };
 

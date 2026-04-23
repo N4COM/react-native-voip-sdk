@@ -2,6 +2,7 @@ import { CallServiceType } from "../callService";
 declare class NativePhone {
     private callService;
     private static instance;
+    private androidCallBridge;
     private callStartingMap;
     isInitialized: boolean;
     constructor(callService: CallServiceType);
@@ -19,6 +20,7 @@ declare class NativePhone {
     }[]): void;
     onNativeCallMute(muted: boolean, callUUID: string): void;
     onNativeCallHold(hold: boolean, callUUID: string): void;
+    onNativeAndroidCallShow(handle: string, callUUID: string, name: string): void;
     onNativeCallDTMF(obj: {
         digits: string;
         callUUID: string;

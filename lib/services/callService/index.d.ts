@@ -86,6 +86,8 @@ declare class CallService extends EventEmitter {
     terminateCall(): void;
     endCallByUUID(callUUID: string): void;
     preLaunchAnswerCall(callUUID: string): void;
+    preLaunchStartCall(_handle: string, _callUUID: string, _name: string): void;
+    reportCallError(error: unknown): void;
     muteCall(): void;
     onCallMuted(isMuted: boolean, callUUID: string): void;
     toggleHoldCall(): void;
