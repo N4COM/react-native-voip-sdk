@@ -332,10 +332,10 @@ class NativePhone{
         console.log('showIncomingCall in NativePhoneCallKit',callUUID, handle, name);
         RNCallKeep.displayIncomingCall(callUUID, handle, handle);
 
-        if (Platform.OS==='android') {
+        // if (Platform.OS==='android') {
   
-            this.onNativeCallDisplay({callUUID, handle, localizedCallerName:name, hasVideo:false, fromPushKit:null, payload:null });
-        }
+        //     this.onNativeCallDisplay({callUUID, handle, localizedCallerName:name, hasVideo:false, fromPushKit:null, payload:null });
+        // }
 
         this.callService.analyticsService.trackEvent('showIncomingCall',{callUUID, handle, name});
       

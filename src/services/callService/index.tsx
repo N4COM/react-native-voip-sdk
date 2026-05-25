@@ -411,13 +411,13 @@ class CallService extends EventEmitter{
     onSipCallFailed(sessionEvent:any){
 
        if (sessionEvent.originator === 'local') {
-            const calls= this.callStore.getAllCalls()
-            calls.forEach((call)=>{
-                this.nativePhone?.reportCallEnded(call.callUUID,sessionEvent.cause,'local')
-                this.callStore.removeCallByCallUUID(call.callUUID)
-                this.emit('callEnded',call)
-            })
-            this.callCleanUp()
+            // const calls= this.callStore.getAllCalls()
+            // calls.forEach((call)=>{
+            //     this.nativePhone?.reportCallEnded(call.callUUID,sessionEvent.cause,'local')
+            //     this.callStore.removeCallByCallUUID(call.callUUID)
+            //     this.emit('callEnded',call)
+            // })
+            // this.callCleanUp()
             return; 
        }
         const call=this.callStore.getCallBySessionId(sessionEvent.message.call_id);
@@ -835,7 +835,7 @@ class CallService extends EventEmitter{
 
        
         if(this.callStore.callUUIDMap.size===0 && this.appState==='background'){
-            this.sipClient.destroy()
+            this.stopCallService()
            
         }
         if (this.callConnectingUUID) {
