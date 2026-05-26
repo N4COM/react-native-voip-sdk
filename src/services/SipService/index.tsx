@@ -16,7 +16,7 @@ const callOptions:any={
 }
 
 
-function sipCallId(session:any, request:any):string|undefined {
+function sipCallId(session:any, request?:any):string|undefined {
     return request?.call_id ?? session?._request?.call_id;
 }
 
@@ -366,9 +366,16 @@ class SipClient {
             options.extraHeaders=[`X-2X-CallData: ${extraCallData}`];
         }
 
+
         const session = this.sipUA.call(handle,options);
-        this.sessionMap.set(session._request.call_id,session);
-        this.callService.analyticsService.trackEvent('sipStartCall',{callUUID:session._request.call_id, handle});
+
+        const callId = sipCallId(session);
+
+        if (callId) {
+            this.sessionMap.set(callId, session);
+            this.callService.analyticsService.trackEvent('sipStartCall', { callUUID: callId, handle });
+        }
+
         return session;
     }
 
