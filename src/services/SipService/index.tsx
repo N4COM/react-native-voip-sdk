@@ -15,6 +15,11 @@ const callOptions:any={
     }
 }
 
+
+function sipCallId(session:any, request:any):string|undefined {
+    return request?.call_id ?? session?._request?.call_id;
+}
+
 const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefined> => {
     
     try {
@@ -220,12 +225,18 @@ class SipClient {
         const {session}=sessionEvent;
         this.registerRTCSessionListeners(session);
         
+        const callId = sipCallId(session, sessionEvent.request);
 
-        this.sessionMap.set(sessionEvent.request.call_id,session);
+        if (!callId) {
+            console.warn('handleNewRTCSession: missing SIP Call-ID');
+            return;
+        }
+
+        this.sessionMap.set(callId,session);
 
         if (sessionEvent.originator === 'remote' ) {
             this.callService.onIncomingSipCall(sessionEvent);
-            this.callService.analyticsService.trackEvent('sipIncomingCall',{callUUID:sessionEvent?.request?.call_id});
+            this.callService.analyticsService.trackEvent('sipIncomingCall',{callUUID:callId});
             return;
         }
 
