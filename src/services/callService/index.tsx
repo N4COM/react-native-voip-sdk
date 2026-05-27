@@ -440,16 +440,16 @@ class CallService extends EventEmitter{
         if (sessionEvent.originator === 'local') {
 
 
-            const calls= this.callStore.getAllCalls()
-            calls.forEach((call)=>{
+            // const calls= this.callStore.getAllCalls()
+            // calls.forEach((call)=>{
 
-                this.nativePhone?.reportCallEnded(call.callUUID,sessionEvent.cause,'local')
-                this.callStore.removeCallByCallUUID(call.callUUID)
-                this.emit('callEnded',call)
-            })
+            //     this.nativePhone?.reportCallEnded(call.callUUID,sessionEvent.cause,'local')
+            //     this.callStore.removeCallByCallUUID(call.callUUID)
+            //     this.emit('callEnded',call)
+            // })
 
 
-            this.callCleanUp()
+            // this.callCleanUp()
 
             return; 
         }
