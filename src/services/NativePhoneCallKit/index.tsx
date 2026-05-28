@@ -330,7 +330,7 @@ class NativePhone{
 
     showIncomingCall(callUUID:string, handle:string, name:string){
         console.log('showIncomingCall in NativePhoneCallKit',callUUID, handle, name);
-        RNCallKeep.displayIncomingCall(callUUID, handle, handle);
+        RNCallKeep.displayIncomingCall(callUUID, handle, name || handle);
 
         // if (Platform.OS==='android') {
   
