@@ -23,7 +23,7 @@ function sipCallId(session:any, request?:any):string|undefined {
 const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefined> => {
     
     try {
-        const response= await customFetch('/webphone',{ 
+        const response= await customFetch('v1/users/me/webphone',{ 
             method:'GET',
         })
         if (!response.ok) {
@@ -38,7 +38,8 @@ const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefin
             userName:resData.data.username,
             displayName:resData.data.displayName,
             displayNumber:resData.data.displayNumber,
-            webSocket:resData.data.websocket
+            webSocket:resData.data.websocket,
+            owner_id:resData.data.owner_id,
         }
         
         return{
