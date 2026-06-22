@@ -135,7 +135,7 @@ class SipClient {
 
 
         this.sipUA.registrator().setExtraContactParams({
-            'app-id': "svoolaz",
+            'app-id': "svoolaz-v2",
             'pn-tok': ownerID,
             'pn-type': "n4com"  
         });

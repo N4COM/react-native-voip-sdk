@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const getBaseURL=async ()=>{
     const isDev=await AsyncStorage.getItem('isDev')
-    const url = 'https://mwtest2.n4com.com/api/pbx/'
+    const url = 'https://middleware.n4com.com/api/pbx/'
     return url
 }
 
