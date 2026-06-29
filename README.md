@@ -41,13 +41,56 @@ backgroundMessageHandler();
 
 ## Inizializzazione
 
-Per avviare il servizio VoIP è necessario chiamare:
+L'SDK non effettua chiamate al backend dell'app host. Il client fornisce le credenziali SIP e, opzionalmente, la registrazione del push token tramite una configurazione iniettata.
 
-```javascript
-callService.initiateCallService(jwtToken);
+```typescript
+import { useCallService, VoipSdkConfig } from 'react-native-voip-sdk';
+
+const config: VoipSdkConfig = {
+  getSipCredentials: async () => {
+    const response = await fetch('https://your-api.example/webphone', {
+      headers: { Authorization: `Bearer ${jwtToken}` },
+    });
+    const { data } = await response.json();
+    return {
+      id: data.id,
+      userName: data.username,
+      password: data.password,
+      realm: data.realm,
+      webSocket: data.websocket,
+      displayName: data.displayName,
+      displayNumber: data.displayNumber,
+      ownerId: data.owner_id,
+    };
+  },
+  onPushToken: async ({ token }) => {
+    await fetch('https://your-api.example/push/register', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        push_token: token,
+        device_type: Platform.OS === 'android' ? 'AndroidPush' : 'iOSPush',
+      }),
+    });
+  },
+  sipContactParams: () => ({
+    'app-id': 'my-app',
+    'pn-tok': myCredentials.ownerId ?? '',
+    'pn-type': 'my-backend',
+  }),
+};
+
+await callService.startCallService(config);
 ```
 
-Il token viene salvato localmente per consentire una registrazione automatica anche dopo riavvii o notifiche push.
+Se le credenziali SIP sono già disponibili nel client:
+
+```typescript
+await callService.startCallServiceWithCredentials(credentials);
+```
 
 ## Funzioni Esportate
 
@@ -55,14 +98,15 @@ L'hook `useCallService()` fornisce accesso ai seguenti metodi:
 
 | Metodo | Descrizione |
 |--------|-------------|
-| `initiateCallService(jwtToken: string)` | Inizializza e registra il servizio VoIP con il token JWT. Deve essere chiamato una sola volta. |
+| `startCallService(config: VoipSdkConfig)` | Inizializza e registra il servizio VoIP con i provider forniti dal client. |
+| `startCallServiceWithCredentials(credentials: SipCredentials)` | Avvia il servizio quando le credenziali SIP sono già disponibili. |
 | `startCall(handle: string, name?: string)` | Avvia una chiamata VoIP verso il numero specificato. Il parametro `name` è opzionale. |
 | `endCall()` | Termina la chiamata attiva. |
 | `toggleMuteCall()` | Attiva/disattiva il microfono durante una chiamata. |
 | `getAudioRoutes()` | Restituisce la lista dei percorsi audio disponibili (es. vivavoce, auricolare, bluetooth). |
 | `setAudioRoute(route: string)` | Imposta il percorso audio da utilizzare per la chiamata. |
 | `setPermissionsPrompts(prompts: PromptsType)` | Personalizza i messaggi di avviso mostrati all'utente per permessi e errori di chiamata. |
-| `stopCallService()` | Termina il servizio VoIP e rimuove le credenziali salvate. |
+| `stopCallService()` | Termina il servizio VoIP e rimuove lo stato interno. |
 
 ## Stati Esposti
 
@@ -199,11 +243,41 @@ const Component = () => {
 
 ```typescript
 import { Button, Platform, Text, View } from "react-native";
-import { useCallService } from "react-native-voip-sdk";
+import { useCallService, VoipSdkConfig } from "react-native-voip-sdk";
 
 const jwtToken = Platform.OS === 'android'
   ? "TOKEN_ANDROID"
   : "TOKEN_IOS";
+
+const voipConfig: VoipSdkConfig = {
+  getSipCredentials: async () => {
+    const response = await fetch('https://your-api.example/webphone', {
+      headers: { Authorization: `Bearer ${jwtToken}` },
+    });
+    const { data } = await response.json();
+    return {
+      id: data.id,
+      userName: data.username,
+      password: data.password,
+      realm: data.realm,
+      webSocket: data.websocket,
+      ownerId: data.owner_id,
+    };
+  },
+  onPushToken: async ({ token }) => {
+    await fetch('https://your-api.example/push/register', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        push_token: token,
+        device_type: Platform.OS === 'android' ? 'AndroidPush' : 'iOSPush',
+      }),
+    });
+  },
+};
 
 const Component = () => {
   const callService = useCallService();
@@ -213,7 +287,7 @@ const Component = () => {
       <Text>VoIP SDK Demo</Text>
       <Button
         title="Inizializza Servizio"
-        onPress={() => callService.initiateCallService(jwtToken)}
+        onPress={() => callService.startCallService(voipConfig)}
       />
       <Button
         title="Avvia Chiamata"

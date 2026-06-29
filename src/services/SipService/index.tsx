@@ -1,8 +1,7 @@
-import { customFetch } from "../../API/api";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import BackgroundTimer from 'react-native-background-timer';
 import SoftPhone from "../../classes/softPhone";
 import { Call, CallServiceType } from "../callService";
+import { SipCredentials } from "../../types/config";
 
 const callOptions:any={
     'mediaConstraints' : { 'audio': true, 'video': false},
@@ -20,55 +19,6 @@ function sipCallId(session:any, request?:any):string|undefined {
     return request?.call_id ?? session?._request?.call_id;
 }
 
-const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefined> => {
-    
-    try {
-        const response= await customFetch('v1/users/me/webphone',{ 
-            method:'GET',
-        })
-        if (!response.ok) {
-            const resData = await response.json()
-            throw new Error(resData.error)
-        }
-        const resData= await response.json();
-        const sipData={
-            id:resData.data.id,
-            password:resData.data.password,
-            realm:resData.data.realm,
-            userName:resData.data.username,
-            displayName:resData.data.displayName,
-            displayNumber:resData.data.displayNumber,
-            webSocket:resData.data.websocket,
-            owner_id:resData.data.owner_id,
-        }
-        
-        return{
-            ...sipData
-        }
-
-    } catch (error) {
-        console.log('====================================');
-        console.log('getSoftPhoneCredentials error',error);
-        console.log('====================================');
-        return undefined
-    }
-   
-}
-
-
-
-
-
-type SoftPhoneCredentials = {
-    id:string,
-    displayName:string,
-    displayNumber:string,
-    userName: string,
-    password: string,
-    realm: string,
-    owner_id?: string,
-    webSocket: string
-}
 
 
 class SipClient {
@@ -77,18 +27,14 @@ class SipClient {
     private callService: CallServiceType;
     private sessionMap:Map<string,any>=new Map();    
     private iceTimeOutId:number|null=null;
-    private configurationParams:SoftPhoneCredentials|undefined;
+    private configurationParams:SipCredentials|undefined;
     private regFlag:boolean=false;
     public  isRegistered:boolean=false;
-    public platform:string|undefined;
-    public pushToken:string|undefined;
 
 
 
     constructor(callService:CallServiceType) {   
         this.callService = callService;
-        this.registerClient();
-        
     }
 
     async registerClient(){
@@ -96,7 +42,10 @@ class SipClient {
             return;
         }
 
-        const credentials= await getSoftPhoneCredentials();
+        const credentials= await this.callService.fetchSipCredentials();
+        console.log('====================================');
+        console.log('credentials',credentials);
+        console.log('====================================');
         if(!credentials){
             console.log('====================================');
             console.log('credentials not found');
@@ -105,16 +54,16 @@ class SipClient {
             this.callService.onSipClientFailed();
             return          
         }
-        const {ua,ownerID}= new SoftPhone(credentials.userName, credentials.password, credentials.realm, credentials.owner_id, credentials.webSocket);
+        const {ua}= new SoftPhone(credentials.userName, credentials.password, credentials.realm, credentials.ownerId, credentials.webSocket);
         this.configurationParams=credentials;
         this.sipUA=ua;
         this.init();
         this.registerEventsListeners();
         this.callService.setCallServiceDeviceId(credentials.id);
-        this.customRegister(ownerID);
+        this.customRegister();
     }
 
-    async customRegister(ownerID:string){
+    async customRegister(){
 
         const registerCallback=()=>{
 
@@ -127,18 +76,17 @@ class SipClient {
            this.sipUA.removeListener("registered",registerCallback);
         }
 
-        const isDev=await AsyncStorage.getItem('isDev')
-        
-        if(!this.sipUA || !this.pushToken || !this.platform){
+        if(!this.sipUA){
             return;
         }
 
-
-        this.sipUA.registrator().setExtraContactParams({
-            'app-id': "svoolaz-v2",
-            'pn-tok': ownerID,
-            'pn-type': "n4com"  
-        });
+        const contactParams = this.callService.getSipContactParams();
+        console.log('====================================');
+        console.log('contactParams',contactParams);
+        console.log('====================================');
+        if (Object.keys(contactParams).length > 0) {
+            this.sipUA.registrator().setExtraContactParams(contactParams);
+        }
 
         if(this.sipUA.isConnected()){
             this.sipUA.registrator().register();
@@ -148,15 +96,6 @@ class SipClient {
         this.sipUA.on("registered",registerCallback);
 
 
-    }
-
-    async registerPushToken(pushToken:string, platform:"a"|"i"){
-        if(!pushToken){
-            return;
-        }
-        this.platform=platform;
-        // this.pushToken=pushToken;
-        // this.customRegister();
     }
 
     init(){
@@ -190,7 +129,7 @@ class SipClient {
         this.sipUA.on('disconnected', (e:any)=>console.log('disconnected'));
         this.sipUA.on('registered', (e:any)=>{this.handleRegistration(e)});
         this.sipUA.on('unregistered', (e:any)=>{this.handleUnRegistration(e)});
-        this.sipUA.on('registrationFailed', (e:any)=>{this.handleRegistration(e)});
+        this.sipUA.on('registrationFailed', (e:any)=>{this.handleRegistrationFailed(e)});
         this.sipUA.on('newRTCSession', (e:any)=>{this.handleNewRTCSession(e)});
     }
 
@@ -206,10 +145,15 @@ class SipClient {
 
 
     handleRegistration(e:any){
-        
         this.callService.onSipClientReady();
         this.isRegistered=true;
         this.callService.analyticsService.trackEvent('sipClientRegistered');
+    }
+
+    handleRegistrationFailed(e:any){
+        this.isRegistered=false;
+        this.callService.analyticsService.trackEvent('sipClientRegistrationFailed');
+        this.callService.onSipClientFailed();
     }
 
     handleUnRegistration(e:any){

@@ -6,8 +6,11 @@ import uuid from 'react-native-uuid';
 import {Alert, AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
 import BackgroundTimer from 'react-native-background-timer';
 import {EventEmitter} from 'eventemitter3';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import prompts, { PromptsType } from '../../prompts';
+import {
+    SipCredentials,
+    VoipSdkConfig,
+} from '../../types/config';
 
 
 
@@ -102,6 +105,7 @@ class CallService extends EventEmitter{
 
     public sipServiceInitFailed:boolean=false
 
+    private sdkConfig?: VoipSdkConfig;
 
     public callServiceDeviceId:string|undefined
 
@@ -126,10 +130,6 @@ class CallService extends EventEmitter{
         this.analyticsService= AnalyticsService.getInstance()
         this.appStateListener()    
 
-    }
-
-    async  saveDev(isDev:boolean){
-        await AsyncStorage.setItem('isDev',isDev.toString())
     }
 
     setPermissionsPrompts(prompts:PromptsType){
@@ -170,37 +170,42 @@ class CallService extends EventEmitter{
         })
     }
 
-    async start(token:string, isDev?:boolean){
+    async start(config: VoipSdkConfig){
 
         const granted=await this.getAudioRecordPermission()
         if (!granted) {
             return false
         }
-        const saved=await this.saveToken(token)
-        if (isDev) {
-            await this.saveDev(isDev)
-        }
-        if (!saved) {
-            return
-        }
+        this.sdkConfig = config;
+        // A push token may have arrived before the config was set; flush it now.
+        this.notificationService.deliverPushToken();
         await this.initiateCallService()
     }
 
-    async saveToken(token:string){
+    async startWithCredentials(credentials: SipCredentials){
+        return this.start({
+            getSipCredentials: async () => credentials,
+        });
+    }
+
+    getSdkConfig(): VoipSdkConfig | undefined {
+        return this.sdkConfig;
+    }
+
+    async fetchSipCredentials(): Promise<SipCredentials | undefined> {
+        if (!this.sdkConfig) {
+            return undefined;
+        }
         try {
-            await AsyncStorage.setItem('N4COM_TOKEN',token)
-            return true
+            return await this.sdkConfig.getSipCredentials();
         } catch (error) {
-            console.log('====================================');
-            console.log('saveToken error',error);
-            console.log('====================================');
-            return false
+            console.log('fetchSipCredentials error', error);
+            return undefined;
         }
     }
-    
 
-    registerPushToken(pushToken:string, platform:"a"|"i"){
-       this.sipClient.registerPushToken(pushToken,platform);
+    getSipContactParams(): Record<string, string> {
+        return this.sdkConfig?.sipContactParams?.() ?? {};
     }
 
     async initiateCallService(){
@@ -210,7 +215,7 @@ class CallService extends EventEmitter{
         }
 
         if (!this.nativePhone.isInitialized) {
-            this.nativePhone.init()
+            await this.nativePhone.init()
         }
     }
 
@@ -228,11 +233,13 @@ class CallService extends EventEmitter{
 
     stopCallService(){
         this.sipClient.destroy()
+        this.sdkConfig = undefined;
     }
 
     removeSipCredentials(){
         this.sipClient.destroy()
         this.sipClient.removeCredentials()
+        this.sdkConfig = undefined;
     }
 
     setCallServiceDeviceId(deviceId:string){

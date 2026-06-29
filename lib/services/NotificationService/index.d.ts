@@ -1,11 +1,12 @@
 import { CallServiceType } from "../callService";
-export declare const registerToken: (token: any, deviceType: any) => Promise<void>;
 declare class NotificationService {
     private callService;
+    private lastToken;
+    private deliveredToken;
     constructor(callService: CallServiceType);
     init(): void;
-    registerOneSignalSdk(): void;
-    registerPushToken(pushToken: string, platform: "a" | "i"): void;
+    registerPushToken(pushToken: string): Promise<void>;
+    deliverPushToken(): Promise<void>;
     registerVoipListeners(): void;
     destroy(): void;
     registerAndroid(): Promise<void>;

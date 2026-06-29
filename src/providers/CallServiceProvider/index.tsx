@@ -4,6 +4,7 @@ import callService from "../../services/callService";
 import BackgroundTimer from 'react-native-background-timer';
 import { Alert, Platform } from "react-native";
 import promptsInstance, { PromptsType } from "../../prompts";
+import { SipCredentials, VoipSdkConfig } from "../../types/config";
 
 
 export type TransferType='blind'|'attended';
@@ -29,7 +30,8 @@ interface CallServiceContext{
     setAudioRoute:(audioRoute:string)=>Promise<void>;
     getAudioRoutes:()=>Promise<void>;
     callServiceSipInitFailed:boolean;
-    initiateCallService:(token:string , isDev?:boolean)=>void;
+    startCallService:(config:VoipSdkConfig)=>Promise<boolean|void>;
+    startCallServiceWithCredentials:(credentials:SipCredentials)=>Promise<boolean|void>;
     setPermissionsPrompts:(prompts:PromptsType)=>void;
     enableAnalytics:(options : AnalyticsOptions)=>void;
 }
@@ -124,8 +126,12 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
         await callService.setAudioRoute(audioRoute);
     }
 
-    const initiateCallService= async (token:string , isDev?:boolean)=>{
-        await callService.start(token, isDev);        
+    const startCallService= async (config:VoipSdkConfig)=>{
+        return await callService.start(config);
+    }
+
+    const startCallServiceWithCredentials= async (credentials:SipCredentials)=>{
+        return await callService.startWithCredentials(credentials);
     }
 
 
@@ -218,7 +224,7 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
             startCall,endCall,holdCall,swapCall,toggleMuteCall
             ,attendedTransferCall,blindTransferCall,sendDTMF,
             setAudioRoute,getAudioRoutes,pendingCall,
-            callState,callServiceSipInitFailed,initiateCallService,stopCallService,setPermissionsPrompts,enableAnalytics}}>
+            callState,callServiceSipInitFailed,startCallService,startCallServiceWithCredentials,stopCallService,setPermissionsPrompts,enableAnalytics}}>
             {children}
         </CallServiceContext.Provider>
     )

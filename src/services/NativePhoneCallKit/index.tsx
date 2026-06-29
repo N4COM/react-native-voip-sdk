@@ -61,7 +61,6 @@ class NativePhone{
         }
 
         this.checkPermissions().then((hasPermissions)=> {
-            console.log('hasPermissions',hasPermissions);
             if (hasPermissions) {
                 this.init();
             }
@@ -85,7 +84,7 @@ class NativePhone{
         try {
             await RNCallKeep.setup({
               ios: {
-                appName: 'N4COM App',
+                appName: 'VoIP App',
               },
               android: {
                 alertTitle: prompts.phoneAccountsPermissions.title,
@@ -93,9 +92,9 @@ class NativePhone{
                 cancelButton: prompts.phoneAccountsPermissions.buttons.cancel,
                 okButton: prompts.phoneAccountsPermissions.buttons.ok,
                 foregroundService: {
-                  channelId: 'com.buniq.n4com',
-                  channelName: 'Foreground service for my app',
-                  notificationTitle: 'My app is running on background',
+                  channelId: 'com.voip.sdk',
+                  channelName: 'VoIP calls',
+                  notificationTitle: 'VoIP service is running',
                   notificationIcon: 'Path to the resource icon of the notification',
                 },
                 selfManaged:true,

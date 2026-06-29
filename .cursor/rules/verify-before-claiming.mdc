@@ -1,0 +1,47 @@
+---
+description: Verification discipline to prevent unverified claims and refactor regressions
+alwaysApply: true
+---
+
+# Verify Before Claiming
+
+A passing `tsc`/build is NOT evidence of correctness. It only proves types compile.
+Never say "done", "correct", "fixed", or "this works" based on a build alone.
+
+## When refactoring or moving code
+
+- BEFORE editing, capture the original behavior. Run `git diff` / `git show` on the
+  exact lines you are changing and read them.
+- AFTER editing, run `git diff HEAD -- <file>` and read every removed line. For each
+  removed line ask: "Was this load-bearing? What relied on it?"
+- If you delete or relocate a call (e.g. an `init()`, a side effect, an event
+  listener), prove the behavior still happens on every path it happened before.
+
+## When making a factual claim about the code
+
+- Trace the actual runtime control flow, including the empty/first-run/no-permission
+  path. Do not reason from intent or memory.
+- If you claim "X was already like this" or "I didn't change X", you MUST verify with
+  `git diff`/`git log` first. No claims about history without checking it.
+
+## Watch for dependency cycles
+
+A guard must not gate the very code that satisfies the guard. Example of the bug this
+rule exists to prevent:
+
+```typescript
+// ❌ BAD: checkPermissions() returns false until init() runs setup(),
+// but init() is gated behind checkPermissions() -> init() never runs.
+if (await this.nativePhone.checkPermissions()) {
+  await this.nativePhone.init(); // init() is what registers the account
+}
+
+// ✅ GOOD: run the setup that registers the account; gate only user prompts.
+await this.nativePhone.init();
+```
+
+## State limits honestly
+
+When reporting results, separate what was verified from what was not:
+- "Build passes" ≠ "verified at runtime".
+- Call out untested paths and assumptions explicitly instead of implying completeness.

@@ -2,6 +2,7 @@ import CallStore from "./callStore";
 import { AppStateStatus } from "react-native";
 import { EventEmitter } from 'eventemitter3';
 import { PromptsType } from '../../prompts';
+import { SipCredentials, VoipSdkConfig } from '../../types/config';
 export declare const HELD = "held";
 export declare const CALL_PROGRESS = "call_progress";
 export declare const CONNECTING = "connecting";
@@ -46,6 +47,7 @@ declare class CallService extends EventEmitter {
     private focusedCallUUID;
     appState: AppStateStatus;
     sipServiceInitFailed: boolean;
+    private sdkConfig?;
     callServiceDeviceId: string | undefined;
     extraCallData: {
         callUUID: string;
@@ -56,12 +58,13 @@ declare class CallService extends EventEmitter {
         callUUID: string;
     } | null;
     constructor();
-    saveDev(isDev: boolean): Promise<void>;
     setPermissionsPrompts(prompts: PromptsType): void;
     getAudioRecordPermission(): Promise<unknown>;
-    start(token: string, isDev?: boolean): Promise<false | undefined>;
-    saveToken(token: string): Promise<boolean>;
-    registerPushToken(pushToken: string, platform: "a" | "i"): void;
+    start(config: VoipSdkConfig): Promise<false | undefined>;
+    startWithCredentials(credentials: SipCredentials): Promise<false | undefined>;
+    getSdkConfig(): VoipSdkConfig | undefined;
+    fetchSipCredentials(): Promise<SipCredentials | undefined>;
+    getSipContactParams(): Record<string, string>;
     initiateCallService(): Promise<void>;
     appStateListener(): void;
     stopCallService(): void;

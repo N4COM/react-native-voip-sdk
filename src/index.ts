@@ -5,3 +5,8 @@ import backgroundMessageHandler from "./backgroundProcess/remoteMessage";
 export default CallServiceProvider;
 export { useCallService };
 export { backgroundMessageHandler };
+export type {
+    SipCredentials,
+    PushTokenInfo,
+    VoipSdkConfig,
+} from "./types/config";
