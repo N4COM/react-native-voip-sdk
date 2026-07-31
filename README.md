@@ -86,10 +86,13 @@ const config: VoipSdkConfig = {
 await callService.startCallService(config);
 ```
 
-Se le credenziali SIP sono già disponibili nel client:
+Se le credenziali SIP sono già disponibili nel client, `getSipCredentials` può restituirle direttamente:
 
 ```typescript
-await callService.startCallServiceWithCredentials(credentials);
+await callService.startCallService({
+  ...config,
+  getSipCredentials: async () => credentials,
+});
 ```
 
 ## Funzioni Esportate
@@ -99,7 +102,6 @@ L'hook `useCallService()` fornisce accesso ai seguenti metodi:
 | Metodo | Descrizione |
 |--------|-------------|
 | `startCallService(config: VoipSdkConfig)` | Inizializza e registra il servizio VoIP con i provider forniti dal client. |
-| `startCallServiceWithCredentials(credentials: SipCredentials)` | Avvia il servizio quando le credenziali SIP sono già disponibili. |
 | `startCall(handle: string, name?: string)` | Avvia una chiamata VoIP verso il numero specificato. Il parametro `name` è opzionale. |
 | `endCall()` | Termina la chiamata attiva. |
 | `toggleMuteCall()` | Attiva/disattiva il microfono durante una chiamata. |

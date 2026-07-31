@@ -182,12 +182,6 @@ class CallService extends EventEmitter{
         await this.initiateCallService()
     }
 
-    async startWithCredentials(credentials: SipCredentials){
-        return this.start({
-            getSipCredentials: async () => credentials,
-        });
-    }
-
     getSdkConfig(): VoipSdkConfig | undefined {
         return this.sdkConfig;
     }

@@ -4,7 +4,7 @@ import callService from "../../services/callService";
 import BackgroundTimer from 'react-native-background-timer';
 import { Alert, Platform } from "react-native";
 import promptsInstance, { PromptsType } from "../../prompts";
-import { SipCredentials, VoipSdkConfig } from "../../types/config";
+import { VoipSdkConfig } from "../../types/config";
 
 
 export type TransferType='blind'|'attended';
@@ -31,7 +31,6 @@ interface CallServiceContext{
     getAudioRoutes:()=>Promise<void>;
     callServiceSipInitFailed:boolean;
     startCallService:(config:VoipSdkConfig)=>Promise<boolean|void>;
-    startCallServiceWithCredentials:(credentials:SipCredentials)=>Promise<boolean|void>;
     setPermissionsPrompts:(prompts:PromptsType)=>void;
     enableAnalytics:(options : AnalyticsOptions)=>void;
 }
@@ -130,11 +129,6 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
         return await callService.start(config);
     }
 
-    const startCallServiceWithCredentials= async (credentials:SipCredentials)=>{
-        return await callService.startWithCredentials(credentials);
-    }
-
-
     const enableAnalytics=(options:AnalyticsOptions)=>{
         if (options.isEnabled) {
             callService.analyticsService.enableAnalytics(true);
@@ -224,7 +218,7 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
             startCall,endCall,holdCall,swapCall,toggleMuteCall
             ,attendedTransferCall,blindTransferCall,sendDTMF,
             setAudioRoute,getAudioRoutes,pendingCall,
-            callState,callServiceSipInitFailed,startCallService,startCallServiceWithCredentials,stopCallService,setPermissionsPrompts,enableAnalytics}}>
+            callState,callServiceSipInitFailed,startCallService,stopCallService,setPermissionsPrompts,enableAnalytics}}>
             {children}
         </CallServiceContext.Provider>
     )
