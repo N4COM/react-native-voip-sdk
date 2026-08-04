@@ -1,4 +1,4 @@
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'jssi... Remove this comment to see the full error message
+// @ts-ignore TS(7016): the pinned jssip fork may or may not ship type declarations
 import JsSIP from 'jssip';
 
 class SoftPhone{
