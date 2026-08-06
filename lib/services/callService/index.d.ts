@@ -61,7 +61,6 @@ declare class CallService extends EventEmitter {
     setPermissionsPrompts(prompts: PromptsType): void;
     getAudioRecordPermission(): Promise<unknown>;
     start(config: VoipSdkConfig): Promise<false | undefined>;
-    startWithCredentials(credentials: SipCredentials): Promise<false | undefined>;
     getSdkConfig(): VoipSdkConfig | undefined;
     fetchSipCredentials(): Promise<SipCredentials | undefined>;
     getSipContactParams(): Record<string, string>;

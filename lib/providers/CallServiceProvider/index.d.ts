@@ -1,7 +1,7 @@
 import React from "react";
 import { Call, PendingCall } from "../../services/callService";
 import { PromptsType } from "../../prompts";
-import { SipCredentials, VoipSdkConfig } from "../../types/config";
+import { VoipSdkConfig } from "../../types/config";
 export type TransferType = 'blind' | 'attended';
 export type AnalyticsOptions = {
     isEnabled: true;
@@ -26,7 +26,6 @@ interface CallServiceContext {
     getAudioRoutes: () => Promise<void>;
     callServiceSipInitFailed: boolean;
     startCallService: (config: VoipSdkConfig) => Promise<boolean | void>;
-    startCallServiceWithCredentials: (credentials: SipCredentials) => Promise<boolean | void>;
     setPermissionsPrompts: (prompts: PromptsType) => void;
     enableAnalytics: (options: AnalyticsOptions) => void;
 }

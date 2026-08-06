@@ -31,6 +31,7 @@
         "react-native": ">=0.60.0",
         "react-native-background-timer": "^2.4.1",
         "react-native-callkeep": "https://github.com/N4COM/react-native-callkeep.git#disable-native-popup",
+        "react-native-incoming-call": "https://github.com/N4COM/react-native-incoming-call.git",
         "react-native-voip-push-notification": ">=3.3.2",
         "react-native-webrtc": ">=124.0.0"
     },
