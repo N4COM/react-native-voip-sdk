@@ -1,8 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DeviceEventEmitter } from "react-native";
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'reac... Remove this comment to see the full error message
 import IncomingCall from 'react-native-incoming-call';
-// @ts-expect-error TS(2307): expo-localization is an optional peer dep supplied by the consumer app
 import * as Localization from 'expo-localization';
 
 export type IncomingCallPayload={
