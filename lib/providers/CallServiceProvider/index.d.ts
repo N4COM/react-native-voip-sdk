@@ -26,7 +26,7 @@ interface CallServiceContext {
     getAudioRoutes: () => Promise<void>;
     callServiceSipInitFailed: boolean;
     startCallService: (config: VoipSdkConfig) => Promise<boolean | void>;
-    setPermissionsPrompts: (prompts: PromptsType) => void;
+    setSdkStrings: (prompts: PromptsType) => void;
     enableAnalytics: (options: AnalyticsOptions) => void;
 }
 declare const CallServiceContext: React.Context<CallServiceContext | null>;

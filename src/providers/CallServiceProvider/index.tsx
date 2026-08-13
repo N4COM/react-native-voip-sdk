@@ -31,7 +31,7 @@ interface CallServiceContext{
     getAudioRoutes:()=>Promise<void>;
     callServiceSipInitFailed:boolean;
     startCallService:(config:VoipSdkConfig)=>Promise<boolean|void>;
-    setPermissionsPrompts:(prompts:PromptsType)=>void;
+    setSdkStrings:(prompts:PromptsType)=>void;
     enableAnalytics:(options : AnalyticsOptions)=>void;
 }
 
@@ -145,8 +145,8 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
         callService.removeSipCredentials();
     }
 
-    const setPermissionsPrompts=(prompts:PromptsType)=>{
-        callService.setPermissionsPrompts(prompts);
+    const setSdkStrings=(prompts:PromptsType)=>{
+        callService.setSdkStrings(prompts);
     }
 
 
@@ -218,7 +218,7 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
             startCall,endCall,holdCall,swapCall,toggleMuteCall
             ,attendedTransferCall,blindTransferCall,sendDTMF,
             setAudioRoute,getAudioRoutes,pendingCall,
-            callState,callServiceSipInitFailed,startCallService,stopCallService,setPermissionsPrompts,enableAnalytics}}>
+            callState,callServiceSipInitFailed,startCallService,stopCallService,setSdkStrings,enableAnalytics}}>
             {children}
         </CallServiceContext.Provider>
     )

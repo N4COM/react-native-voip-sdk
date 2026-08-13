@@ -15,7 +15,6 @@ declare class AndroidCallBridge {
     destroy(): void;
     handlePayload(payload: any): void;
     showIncomingCallScreen(payload: IncomingCallPayload): Promise<void>;
-    getAppLanguage(): Promise<string | null>;
     dismissCall(callUUID: string): void;
     backToForeground(): void;
     launchApp(callUUID: string, callerName: string): void;

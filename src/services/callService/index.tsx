@@ -132,7 +132,7 @@ class CallService extends EventEmitter{
 
     }
 
-    setPermissionsPrompts(prompts:PromptsType){
+    setSdkStrings(prompts:PromptsType){
         promptsInstance.setPrompts(prompts)
     }
 

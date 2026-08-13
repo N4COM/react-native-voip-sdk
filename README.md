@@ -107,7 +107,7 @@ L'hook `useCallService()` fornisce accesso ai seguenti metodi:
 | `toggleMuteCall()` | Attiva/disattiva il microfono durante una chiamata. |
 | `getAudioRoutes()` | Restituisce la lista dei percorsi audio disponibili (es. vivavoce, auricolare, bluetooth). |
 | `setAudioRoute(route: string)` | Imposta il percorso audio da utilizzare per la chiamata. |
-| `setPermissionsPrompts(prompts: PromptsType)` | Personalizza i messaggi di avviso mostrati all'utente per permessi e errori di chiamata. |
+| `setSdkStrings(prompts: PromptsType)` | Personalizza i messaggi di avviso e i testi della schermata di chiamata in arrivo (Android). |
 | `stopCallService()` | Termina il servizio VoIP e rimuove lo stato interno. |
 
 ## Stati Esposti
@@ -120,15 +120,16 @@ L'hook `useCallService()` fornisce accesso ai seguenti metodi:
 
 ## Personalizzazione dei Prompts
 
-L'SDK permette di personalizzare i messaggi di avviso mostrati all'utente tramite la funzione `setPermissionsPrompts()`. Questo consente di adattare i testi e i pulsanti degli alert in base alla lingua o alle esigenze dell'applicazione.
+L'SDK permette di personalizzare i messaggi di avviso mostrati all'utente tramite la funzione `setSdkStrings()`. Questo consente di adattare i testi e i pulsanti degli alert in base alla lingua o alle esigenze dell'applicazione. I testi di `incomingCallScreen` vengono persistiti dallo SDK, così la schermata di chiamata in arrivo su Android resta localizzata anche a app chiusa.
 
 ### Tipi di Prompt Disponibili
 
-L'oggetto `PromptsType` consente di personalizzare tre tipi di messaggi:
+L'oggetto `PromptsType` consente di personalizzare quattro tipi di messaggi:
 
 1. **initialPermissions** - Mostrato quando vengono richiesti i permessi iniziali per le chiamate
 2. **callFailed** - Mostrato quando una chiamata fallisce
 3. **phoneAccountsPermissions** - Mostrato quando sono necessari i permessi per accedere agli account telefonici
+4. **incomingCallScreen** - Testi della schermata di chiamata in arrivo su Android (`info`, `accept`, `decline`). Opzionale: se omesso restano i valori precedenti o i predefiniti in italiano.
 
 ### Struttura PromptsType
 
@@ -157,12 +158,17 @@ type PromptsType = {
       ok: string;
     };
   };
+  incomingCallScreen?: {
+    info: string;
+    accept: string;
+    decline: string;
+  };
 };
 ```
 
 ### Valori Predefiniti
 
-Se non viene chiamato `setPermissionsPrompts()`, l'SDK utilizza i seguenti valori predefiniti in italiano:
+Se non viene chiamato `setSdkStrings()`, l'SDK utilizza i seguenti valori predefiniti in italiano:
 
 ```typescript
 const defaultPrompts = {
@@ -189,6 +195,11 @@ Concedendo l'autorizzazione potrai utilizzare tutte le funzioni di chiamata senz
       cancel: 'Annulla',
       ok: 'OK'
     }
+  },
+  incomingCallScreen: {
+    info: 'Chiamata in arrivo',
+    accept: 'Accetta',
+    decline: 'Rifiuta'
   }
 };
 ```
@@ -225,11 +236,16 @@ const Component = () => {
         cancel: 'Cancel',
         ok: 'OK'
       }
+    },
+    incomingCallScreen: {
+      info: 'Incoming Call',
+      accept: 'Accept',
+      decline: 'Decline'
     }
   };
 
   // Imposta i prompts personalizzati
-  callService.setPermissionsPrompts(customPrompts);
+  callService.setSdkStrings(customPrompts);
 
   return (
     // ... il resto del componente
@@ -237,7 +253,7 @@ const Component = () => {
 };
 ```
 
-**Nota:** È consigliabile chiamare `setPermissionsPrompts()` all'avvio dell'app, prima di inizializzare il servizio VoIP, per garantire che i messaggi personalizzati siano disponibili fin dall'inizio.
+**Nota:** È consigliabile chiamare `setSdkStrings()` all'avvio dell'app, prima di inizializzare il servizio VoIP, per garantire che i messaggi personalizzati siano disponibili fin dall'inizio. I testi di `incomingCallScreen` restano persistiti anche dopo `stopCallService()`, così una chiamata in arrivo a processo freddo usa l'ultima lingua impostata. La prima chiamata in arrivo prima che l'app abbia mai chiamato `setSdkStrings()` usa i predefiniti in italiano.
 
 ## Example
 

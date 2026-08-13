@@ -1,7 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DeviceEventEmitter } from "react-native";
 import IncomingCall from 'react-native-incoming-call';
-import * as Localization from 'expo-localization';
+import promptsInstance from "../../prompts";
 
 export type IncomingCallPayload={
     uuid:string,
@@ -67,41 +66,18 @@ class AndroidCallBridge{
         this.incomingCallScreenActive=true;
         this.incomingCallScreenPayload=payload; 
 
-        const appLanguage= await this.getAppLanguage();
+        const incomingCallScreen = await promptsInstance.getIncomingCallScreen();
 
-        const isLanguageItalian= appLanguage?.substring(0,2)==='it';
-
-        isLanguageItalian?
-                 IncomingCall.display(
-                    payload.uuid, // Call UUID v4
-                    payload.callerName, // Username
-                    'https://gravatar.com/avatar/10b2db7467c1d5e5ffcf2df2e7bde120?s=400&d=mp&r=x', // Avatar URL
-                    'Chiamata in arrivo',  // Info text
-                    180000, // Timeout for end call after 180s
-                    'Accetta',
-                    'Rifiuta'
-                )
-                :
-                IncomingCall.display(
-                    payload.uuid, // Call UUID v4
-                    payload.callerName, // Username
-                    'https://gravatar.com/avatar/10b2db7467c1d5e5ffcf2df2e7bde120?s=400&d=mp&r=x', // Avatar URL
-                    'Incoming Call', // Info text
-                    180000, // Timeout for end call after 180s
-                    'Accept',
-                    'Decline'
-                )  
-
-               
+        IncomingCall.display(
+            payload.uuid, // Call UUID v4
+            payload.callerName, // Username
+            'https://gravatar.com/avatar/10b2db7467c1d5e5ffcf2df2e7bde120?s=400&d=mp&r=x', // Avatar URL
+            incomingCallScreen.info,
+            180000, // Timeout for end call after 180s
+            incomingCallScreen.accept,
+            incomingCallScreen.decline
+        );
      }
-
-
-
-    async getAppLanguage(){
-        let appLanguage=await AsyncStorage.getItem('app_language');
-        if(!appLanguage) appLanguage=Localization.getLocales()[0].languageCode;
-        return appLanguage;
-    }
 
     dismissCall(callUUID:string){
         if (!this.incomingCallScreenPayload || callUUID!==this.incomingCallScreenPayload.uuid) {

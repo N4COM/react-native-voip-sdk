@@ -58,7 +58,7 @@ declare class CallService extends EventEmitter {
         callUUID: string;
     } | null;
     constructor();
-    setPermissionsPrompts(prompts: PromptsType): void;
+    setSdkStrings(prompts: PromptsType): void;
     getAudioRecordPermission(): Promise<unknown>;
     start(config: VoipSdkConfig): Promise<false | undefined>;
     getSdkConfig(): VoipSdkConfig | undefined;
