@@ -1,6 +1,6 @@
 {
     "name": "react-native-voip-sdk",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "VoIP provider SDK for React Native using JsSIP and react-native-callkeep",
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
@@ -38,9 +38,6 @@
         "@config-plugins/react-native-callkeep": "^9.0.0",
         "crypto-js": "^4.2.0",
         "eventemitter3": "^5.0.1",
-        "posthog-react-native": "^4.12.0",
-        "react-native-device-info": "^15.0.1",
-        "react-native-localize": "^3.6.0",
         "react-native-uuid": "^2.0.3"
     },
     "devDependencies": {

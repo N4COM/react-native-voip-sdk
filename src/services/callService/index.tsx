@@ -22,7 +22,6 @@ export const ESTABLISHED= 'established';
 // @ts-expect-error TS(7016): Could not find a declaration file for module 'cryp... Remove this comment to see the full error message
 import {MD5} from 'crypto-js';
 import promptsInstance from "../../prompts";
-import AnalyticsService from "../AnalyticsService";
 
 export type AudioRoute='PHONE'|'SPEAKER'|'HEADSET'|'BLUETOOTH'
 
@@ -90,7 +89,6 @@ class CallService extends EventEmitter{
     private sipClient!:SipClient
     private notificationService!:NotificationService
     public callStore!:CallStore
-    public analyticsService!:AnalyticsService
     public callConnectingUUID:string|undefined
 
     private pendingCall:PendingCall|undefined
@@ -127,7 +125,6 @@ class CallService extends EventEmitter{
         this.nativePhone= new NativePhone(this)
         this.sipClient= new SipClient(this)
         this.notificationService= new NotificationService(this)
-        this.analyticsService= AnalyticsService.getInstance()
         this.appStateListener()    
 
     }
@@ -200,6 +197,10 @@ class CallService extends EventEmitter{
 
     getSipContactParams(): Record<string, string> {
         return this.sdkConfig?.sipContactParams?.() ?? {};
+    }
+
+    emitSdkEvent(name: string, properties?: Record<string, any>) {
+        this.sdkConfig?.onSdkEvent?.({ name, properties });
     }
 
     async initiateCallService(){

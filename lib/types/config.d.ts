@@ -11,8 +11,13 @@ export type SipCredentials = {
 export type PushTokenInfo = {
     token: string;
 };
+export type SdkEvent = {
+    name: string;
+    properties?: Record<string, any>;
+};
 export type VoipSdkConfig = {
     getSipCredentials: () => Promise<SipCredentials>;
     onPushToken?: (info: PushTokenInfo) => Promise<void>;
     sipContactParams?: () => Record<string, string>;
+    onSdkEvent?: (event: SdkEvent) => void;
 };

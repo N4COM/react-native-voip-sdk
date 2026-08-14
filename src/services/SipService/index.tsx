@@ -50,7 +50,7 @@ class SipClient {
             console.log('====================================');
             console.log('credentials not found');
             console.log('====================================');
-            this.callService.analyticsService.trackEvent('registerClientFailed');
+            this.callService.emitSdkEvent('registerClientFailed');
             this.callService.onSipClientFailed();
             return          
         }
@@ -147,12 +147,12 @@ class SipClient {
     handleRegistration(e:any){
         this.callService.onSipClientReady();
         this.isRegistered=true;
-        this.callService.analyticsService.trackEvent('sipClientRegistered');
+        this.callService.emitSdkEvent('sipClientRegistered');
     }
 
     handleRegistrationFailed(e:any){
         this.isRegistered=false;
-        this.callService.analyticsService.trackEvent('sipClientRegistrationFailed');
+        this.callService.emitSdkEvent('sipClientRegistrationFailed');
         this.callService.onSipClientFailed();
     }
 
@@ -160,7 +160,7 @@ class SipClient {
         // some logic here
         this.isRegistered=false;
         this.callService.canCall=false;
-        this.callService.analyticsService.trackEvent('sipClientUnregistered');
+        this.callService.emitSdkEvent('sipClientUnregistered');
 
         
     }
@@ -181,13 +181,13 @@ class SipClient {
 
         if (sessionEvent.originator === 'remote' ) {
             this.callService.onIncomingSipCall(sessionEvent);
-            this.callService.analyticsService.trackEvent('sipIncomingCall',{callUUID:callId});
+            this.callService.emitSdkEvent('sipIncomingCall',{callUUID:callId});
             return;
         }
 
         if (sessionEvent.originator === 'local') {
             this.callService.onSipLocalSessionCreated();
-            this.callService.analyticsService.trackEvent('sipLocalSessionCreated');
+            this.callService.emitSdkEvent('sipLocalSessionCreated');
             return;
         }
 
@@ -209,12 +209,12 @@ class SipClient {
 
     handleFailedRTCSession(e:any){
         this.callService.onSipCallFailed(e);
-        this.callService.analyticsService.trackEvent('sipCallFailed',{callUUID:e?.message?.call_id});
+        this.callService.emitSdkEvent('sipCallFailed',{callUUID:e?.message?.call_id});
     }
 
     handleEndedRTCSession(e:any){
         this.callService.onSipCallEnded(e);
-        this.callService.analyticsService.trackEvent('sipCallEnded',{callUUID:e?.message?.call_id});
+        this.callService.emitSdkEvent('sipCallEnded',{callUUID:e?.message?.call_id});
     }
 
     handleConfirmedRTCSession(e:any){
@@ -282,7 +282,7 @@ class SipClient {
 
     endCall(sessionId:string,reason_phrase?:string, status_code?:number){
 
-        this.callService.analyticsService.trackEvent('endCall',{callUUID:sessionId, reason_phrase, status_code});
+        this.callService.emitSdkEvent('endCall',{callUUID:sessionId, reason_phrase, status_code});
 
         const session=this.sessionMap.get(sessionId);
         if (session) {
@@ -296,7 +296,7 @@ class SipClient {
                 console.log('====================================');
                 console.log('error in endCall',e);
                 console.log('====================================');
-                this.callService.analyticsService.trackEvent('sipEndCallError',{callUUID:sessionId});
+                this.callService.emitSdkEvent('sipEndCallError',{callUUID:sessionId});
                 // this.callService.reportCallError(e);
             }
 
@@ -318,7 +318,7 @@ class SipClient {
 
         if (callId) {
             this.sessionMap.set(callId, session);
-            this.callService.analyticsService.trackEvent('sipStartCall', { callUUID: callId, handle });
+            this.callService.emitSdkEvent('sipStartCall', { callUUID: callId, handle });
         }
 
         return session;

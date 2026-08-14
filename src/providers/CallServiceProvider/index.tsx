@@ -8,13 +8,6 @@ import { VoipSdkConfig } from "../../types/config";
 
 
 export type TransferType='blind'|'attended';
-export type AnalyticsOptions={
-    isEnabled:true,
-    userId:string,
-    properties:Record<string, any>
-} | {
-    isEnabled:false,
-} 
 interface CallServiceContext{
     startCall:(handle:string,name?:string, calldata?:string)=>void;
     endCall:()=>void;
@@ -32,7 +25,6 @@ interface CallServiceContext{
     callServiceSipInitFailed:boolean;
     startCallService:(config:VoipSdkConfig)=>Promise<boolean|void>;
     setSdkStrings:(prompts:PromptsType)=>void;
-    enableAnalytics:(options : AnalyticsOptions)=>void;
 }
 
 
@@ -129,17 +121,6 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
         return await callService.start(config);
     }
 
-    const enableAnalytics=(options:AnalyticsOptions)=>{
-        if (options.isEnabled) {
-            callService.analyticsService.enableAnalytics(true);
-            callService.analyticsService.identify(options.userId, options.properties);
-        }
-        else {
-            callService.analyticsService.enableAnalytics(false);
-            callService.analyticsService.resetAnalytics();
-        }
-    }
-
     const stopCallService=()=>{
         callService.stopCallService();
         callService.removeSipCredentials();
@@ -218,7 +199,7 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
             startCall,endCall,holdCall,swapCall,toggleMuteCall
             ,attendedTransferCall,blindTransferCall,sendDTMF,
             setAudioRoute,getAudioRoutes,pendingCall,
-            callState,callServiceSipInitFailed,startCallService,stopCallService,setSdkStrings,enableAnalytics}}>
+            callState,callServiceSipInitFailed,startCallService,stopCallService,setSdkStrings}}>
             {children}
         </CallServiceContext.Provider>
     )

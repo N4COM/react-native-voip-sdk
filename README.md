@@ -81,10 +81,16 @@ const config: VoipSdkConfig = {
     'pn-tok': myCredentials.ownerId ?? '',
     'pn-type': 'my-backend',
   }),
+  onSdkEvent: ({ name, properties }) => {
+    // Inoltra a analytics, log, o ignora.
+    console.log(name, properties);
+  },
 };
 
 await callService.startCallService(config);
 ```
+
+`onSdkEvent` è opzionale. L'SDK lo chiama per eventi di ciclo di vita (registrazione SIP, schermata chiamata, answer/end, …). Eventi emessi prima di `startCallService()` (avvio a freddo Android, UI nativa iOS) non vengono consegnati.
 
 Se le credenziali SIP sono già disponibili nel client, `getSipCredentials` può restituirle direttamente:
 

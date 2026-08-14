@@ -8,5 +8,6 @@ export { backgroundMessageHandler };
 export type {
     SipCredentials,
     PushTokenInfo,
+    SdkEvent,
     VoipSdkConfig,
 } from "./types/config";

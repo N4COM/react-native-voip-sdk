@@ -3,13 +3,6 @@ import { Call, PendingCall } from "../../services/callService";
 import { PromptsType } from "../../prompts";
 import { VoipSdkConfig } from "../../types/config";
 export type TransferType = 'blind' | 'attended';
-export type AnalyticsOptions = {
-    isEnabled: true;
-    userId: string;
-    properties: Record<string, any>;
-} | {
-    isEnabled: false;
-};
 interface CallServiceContext {
     startCall: (handle: string, name?: string, calldata?: string) => void;
     endCall: () => void;
@@ -27,7 +20,6 @@ interface CallServiceContext {
     callServiceSipInitFailed: boolean;
     startCallService: (config: VoipSdkConfig) => Promise<boolean | void>;
     setSdkStrings: (prompts: PromptsType) => void;
-    enableAnalytics: (options: AnalyticsOptions) => void;
 }
 declare const CallServiceContext: React.Context<CallServiceContext | null>;
 declare const CallServiceProvider: ({ children }: {

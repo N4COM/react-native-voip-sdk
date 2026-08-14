@@ -8,7 +8,6 @@ export declare const CALL_PROGRESS = "call_progress";
 export declare const CONNECTING = "connecting";
 export declare const RINGING = "ringing";
 export declare const ESTABLISHED = "established";
-import AnalyticsService from "../AnalyticsService";
 export type AudioRoute = 'PHONE' | 'SPEAKER' | 'HEADSET' | 'BLUETOOTH';
 export interface Call {
     sessionId: string;
@@ -38,7 +37,6 @@ declare class CallService extends EventEmitter {
     private sipClient;
     private notificationService;
     callStore: CallStore;
-    analyticsService: AnalyticsService;
     callConnectingUUID: string | undefined;
     private pendingCall;
     private pendingCallTimeout;
@@ -64,6 +62,7 @@ declare class CallService extends EventEmitter {
     getSdkConfig(): VoipSdkConfig | undefined;
     fetchSipCredentials(): Promise<SipCredentials | undefined>;
     getSipContactParams(): Record<string, string>;
+    emitSdkEvent(name: string, properties?: Record<string, any>): void;
     initiateCallService(): Promise<void>;
     appStateListener(): void;
     stopCallService(): void;
