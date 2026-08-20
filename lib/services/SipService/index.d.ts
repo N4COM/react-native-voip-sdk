@@ -5,11 +5,11 @@ declare class SipClient {
     private sessionMap;
     private iceTimeOutId;
     private configurationParams;
-    private regFlag;
     isRegistered: boolean;
+    private connecting?;
     constructor(callService: CallServiceType);
     registerClient(): Promise<void>;
-    customRegister(): Promise<void>;
+    private startSipUserAgent;
     init(): void;
     registerEventsListeners(): void;
     destroy(): void;

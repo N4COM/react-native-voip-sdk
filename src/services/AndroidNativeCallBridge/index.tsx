@@ -59,10 +59,6 @@ class AndroidCallBridge{
 
      async showIncomingCallScreen(payload:IncomingCallPayload){
         
-        console.log('====================================');
-        console.log('showIncomingCallScreen in AndroidNativeCallBridge',payload);
-        console.log('====================================');
-
         this.incomingCallScreenActive=true;
         this.incomingCallScreenPayload=payload; 
 

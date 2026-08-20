@@ -11,6 +11,13 @@ import {
     SipCredentials,
     VoipSdkConfig,
 } from '../../types/config';
+import {
+    clearSipSession,
+    isUsableSipCredentials,
+    loadSipSession,
+    saveSipSession,
+    SipSession,
+} from '../sipSessionStore';
 
 
 
@@ -80,6 +87,9 @@ export type CallServiceType= typeof callServiceInstance
 
 export type CallStatus='connecting'|'ringing'|'established'|'ended'|'peerConnection'
 
+const PENDING_INVITE_TIMEOUT_MS = 5000;
+const PENDING_SIP_WAKE_TIMEOUT_MS = 20000;
+
 const getNewUuid = () => uuid.v4().toString().toLowerCase();
 class CallService extends EventEmitter{
 
@@ -104,6 +114,7 @@ class CallService extends EventEmitter{
     public sipServiceInitFailed:boolean=false
 
     private sdkConfig?: VoipSdkConfig;
+    private sipSession?: SipSession;
 
     public callServiceDeviceId:string|undefined
 
@@ -176,6 +187,7 @@ class CallService extends EventEmitter{
         this.sdkConfig = config;
         // A push token may have arrived before the config was set; flush it now.
         this.notificationService.deliverPushToken();
+        this.sipSession = await this.readSipSessionFromHost();
         await this.initiateCallService()
     }
 
@@ -183,20 +195,38 @@ class CallService extends EventEmitter{
         return this.sdkConfig;
     }
 
-    async fetchSipCredentials(): Promise<SipCredentials | undefined> {
+    // The host is the source of truth, but it only reaches us through start().
+    // A push-woken process has no host config, so it falls back to the session
+    // saved by the last start().
+    async getSipSession(): Promise<SipSession | undefined> {
+        if (!this.sipSession && this.sdkConfig) {
+            this.sipSession = await this.readSipSessionFromHost();
+        }
+        if (!this.sipSession) {
+            this.sipSession = await loadSipSession();
+        }
+        return this.sipSession;
+    }
+
+    private async readSipSessionFromHost(): Promise<SipSession | undefined> {
         if (!this.sdkConfig) {
             return undefined;
         }
         try {
-            return await this.sdkConfig.getSipCredentials();
+            const credentials = await this.sdkConfig.getSipCredentials();
+            if (!isUsableSipCredentials(credentials)) {
+                return undefined;
+            }
+            const session = {
+                credentials,
+                contactParams: this.sdkConfig.sipContactParams?.() ?? {},
+            };
+            await saveSipSession(session);
+            return session;
         } catch (error) {
-            console.log('fetchSipCredentials error', error);
+            console.log('getSipCredentials error', error);
             return undefined;
         }
-    }
-
-    getSipContactParams(): Record<string, string> {
-        return this.sdkConfig?.sipContactParams?.() ?? {};
     }
 
     emitSdkEvent(name: string, properties?: Record<string, any>) {
@@ -204,7 +234,7 @@ class CallService extends EventEmitter{
     }
 
     async initiateCallService(){
-        this.sipClient.registerClient()
+        void this.sipClient.registerClient()
         if (Platform.OS==='android') {
             this.notificationService.registerAndroid()
         }
@@ -235,6 +265,8 @@ class CallService extends EventEmitter{
         this.sipClient.destroy()
         this.sipClient.removeCredentials()
         this.sdkConfig = undefined;
+        this.sipSession = undefined;
+        void clearSipSession();
     }
 
     setCallServiceDeviceId(deviceId:string){
@@ -271,33 +303,50 @@ class CallService extends EventEmitter{
             this.emit('callPending',this.pendingCall)
         }
 
+        this.clearPendingCallTimeout()
+
+        this.pendingCall={callUUID,handle,name,isAnswered:false}
+        this.armPendingCallTimeout(
+            callUUID,
+            this.sipClient.isRegistered ? PENDING_INVITE_TIMEOUT_MS : PENDING_SIP_WAKE_TIMEOUT_MS,
+        );
+
+        void this.sipClient.registerClient()
+
+    }
+
+    private clearPendingCallTimeout(){
         if (this.pendingCallTimeout !== undefined) {
             BackgroundTimer.clearTimeout(this.pendingCallTimeout)
             this.pendingCallTimeout=undefined
         }
+    }
 
-        this.pendingCall={callUUID,handle,name,isAnswered:false}
-        // auto destroy the call after 5 seconds
+    private armPendingCallTimeout(callUUID:string, timeoutMs:number){
+        this.clearPendingCallTimeout()
         this.pendingCallTimeout= BackgroundTimer.setTimeout(()=>{
+            this.pendingCallTimeout=undefined
+            if (!this.pendingCall || this.pendingCall.callUUID !== callUUID) {
+                return
+            }
             this.emit('callFailed')
             this.pendingCall=undefined
             this.nativePhone?.reportCallEnded(callUUID,'Failed','local')
-            this.pendingCallTimeout=undefined
             this.emit('callPending',this.pendingCall)
             this.callCleanUp()
             console.log('====================================');
             console.log('reportCallEnded in callService for pending call timeout',callUUID,'Failed','local');
             console.log('====================================');
-        },5000);
-
-        this.sipClient.init()
-
+        },timeoutMs);
     }
 
     onSipClientReady(){
 
         this.canCall=true;
         this.sipServiceInitFailed=false;
+        if (this.pendingCall) {
+            this.armPendingCallTimeout(this.pendingCall.callUUID, PENDING_INVITE_TIMEOUT_MS)
+        }
         if (this.pendingOutgoingCall&& this.pendingOutgoingCallTimeout) {
            
             this.startedCall(this.pendingOutgoingCall.handle,this.pendingOutgoingCall.callUUID,this.pendingOutgoingCall.name)
@@ -527,12 +576,8 @@ class CallService extends EventEmitter{
         console.log('====================================');
         console.log('onIncomingFcmCall in callService',callUUID,handle,name);
         console.log('====================================');
-        
+
         this.nativePhone?.showIncomingCall(callUUID,handle,name)
-
-        // this.callScreenDisplayed(callUUID,handle,name)
-
-        
     }
 
     onSipLocalSessionCreated(){

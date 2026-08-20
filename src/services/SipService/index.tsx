@@ -28,8 +28,8 @@ class SipClient {
     private sessionMap:Map<string,any>=new Map();    
     private iceTimeOutId:number|null=null;
     private configurationParams:SipCredentials|undefined;
-    private regFlag:boolean=false;
     public  isRegistered:boolean=false;
+    private connecting?: Promise<void>;
 
 
 
@@ -37,16 +37,26 @@ class SipClient {
         this.callService = callService;
     }
 
-    async registerClient(){
-        if (this.sipUA && this.sipUA.isConnected()) {
+    // start() and an incoming call can both ask for SIP at once. Share one
+    // attempt so they wait on the same user agent instead of building two.
+    registerClient(): Promise<void> {
+        if (!this.connecting) {
+            this.connecting = this.startSipUserAgent()
+                .finally(() => { this.connecting = undefined; });
+        }
+        return this.connecting;
+    }
+
+    private async startSipUserAgent(){
+        // stopCallService() only stops the user agent, it does not drop it, so
+        // a backgrounded app reconnects the existing one.
+        if (this.sipUA) {
+            this.init();
             return;
         }
 
-        const credentials= await this.callService.fetchSipCredentials();
-        console.log('====================================');
-        console.log('credentials',credentials);
-        console.log('====================================');
-        if(!credentials){
+        const session= await this.callService.getSipSession();
+        if(!session){
             console.log('====================================');
             console.log('credentials not found');
             console.log('====================================');
@@ -54,48 +64,18 @@ class SipClient {
             this.callService.onSipClientFailed();
             return          
         }
+        const {credentials, contactParams}= session;
         const {ua}= new SoftPhone(credentials.userName, credentials.password, credentials.realm, credentials.ownerId, credentials.webSocket);
         this.configurationParams=credentials;
         this.sipUA=ua;
-        this.init();
-        this.registerEventsListeners();
-        this.callService.setCallServiceDeviceId(credentials.id);
-        this.customRegister();
-    }
-
-    async customRegister(){
-
-        const registerCallback=()=>{
-
-            if (this.regFlag) {
-                return;
-            }
-            this.regFlag = true;
-            
-           this.sipUA.registrator().register();
-           this.sipUA.removeListener("registered",registerCallback);
-        }
-
-        if(!this.sipUA){
-            return;
-        }
-
-        const contactParams = this.callService.getSipContactParams();
-        console.log('====================================');
-        console.log('contactParams',contactParams);
-        console.log('====================================');
+        // Both must be in place before start(): the UA registers itself as soon
+        // as it connects, and that REGISTER has to carry the contact params.
         if (Object.keys(contactParams).length > 0) {
             this.sipUA.registrator().setExtraContactParams(contactParams);
         }
-
-        if(this.sipUA.isConnected()){
-            this.sipUA.registrator().register();
-        }
-
-
-        this.sipUA.on("registered",registerCallback);
-
-
+        this.registerEventsListeners();
+        this.callService.setCallServiceDeviceId(credentials.id);
+        this.init();
     }
 
     init(){

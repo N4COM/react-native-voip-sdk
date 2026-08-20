@@ -2,7 +2,8 @@ import CallStore from "./callStore";
 import { AppStateStatus } from "react-native";
 import { EventEmitter } from 'eventemitter3';
 import { PromptsType } from '../../prompts';
-import { SipCredentials, VoipSdkConfig } from '../../types/config';
+import { VoipSdkConfig } from '../../types/config';
+import { SipSession } from '../sipSessionStore';
 export declare const HELD = "held";
 export declare const CALL_PROGRESS = "call_progress";
 export declare const CONNECTING = "connecting";
@@ -46,6 +47,7 @@ declare class CallService extends EventEmitter {
     appState: AppStateStatus;
     sipServiceInitFailed: boolean;
     private sdkConfig?;
+    private sipSession?;
     callServiceDeviceId: string | undefined;
     extraCallData: {
         callUUID: string;
@@ -60,8 +62,8 @@ declare class CallService extends EventEmitter {
     getAudioRecordPermission(): Promise<unknown>;
     start(config: VoipSdkConfig): Promise<false | undefined>;
     getSdkConfig(): VoipSdkConfig | undefined;
-    fetchSipCredentials(): Promise<SipCredentials | undefined>;
-    getSipContactParams(): Record<string, string>;
+    getSipSession(): Promise<SipSession | undefined>;
+    private readSipSessionFromHost;
     emitSdkEvent(name: string, properties?: Record<string, any>): void;
     initiateCallService(): Promise<void>;
     appStateListener(): void;
@@ -69,6 +71,8 @@ declare class CallService extends EventEmitter {
     removeSipCredentials(): void;
     setCallServiceDeviceId(deviceId: string): void;
     callScreenDisplayed(callUUID: string, handle: string, name: string): void;
+    private clearPendingCallTimeout;
+    private armPendingCallTimeout;
     onSipClientReady(): void;
     onSipClientFailed(): void;
     makeSureUUIDisUUID4(uuid: string): string;
