@@ -6,11 +6,8 @@ import uuid from 'react-native-uuid';
 import {Alert, AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
 import BackgroundTimer from 'react-native-background-timer';
 import {EventEmitter} from 'eventemitter3';
-import prompts, { PromptsType } from '../../prompts';
-import {
-    SipCredentials,
-    VoipSdkConfig,
-} from '../../types/config';
+import { PromptsType } from '../../prompts';
+import {VoipSdkConfig} from '../../types/config';
 import {
     clearSipSession,
     isUsableSipCredentials,
@@ -26,7 +23,7 @@ export const CALL_PROGRESS='call_progress';
 export const CONNECTING= 'connecting';
 export const RINGING= 'ringing';
 export const ESTABLISHED= 'established';
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'cryp... Remove this comment to see the full error message
+// @ts-ignore TS(7016): the pinned crypto-js fork may or may not ship type declarations
 import {MD5} from 'crypto-js';
 import promptsInstance from "../../prompts";
 
@@ -239,9 +236,7 @@ class CallService extends EventEmitter{
             this.notificationService.registerAndroid()
         }
 
-        if (!this.nativePhone.isInitialized) {
-            await this.nativePhone.init()
-        }
+        await this.nativePhone.init()
     }
 
     appStateListener(){
@@ -276,10 +271,6 @@ class CallService extends EventEmitter{
 
     callScreenDisplayed(callUUID:string,handle:string,name:string){
        
-        console.log('====================================');
-        console.log('callScreenDisplayed in callService',callUUID,handle,name);
-        console.log('====================================');
-
         const call=this.callStore.getCallByCallUUID(callUUID);
 
 
@@ -288,16 +279,10 @@ class CallService extends EventEmitter{
         }
 
         if (this.pendingCall && this.pendingCall.callUUID === callUUID && this.pendingCallTimeout !== undefined) {
-            console.log('====================================');
-            console.log('callScreenDisplayed in callService: duplicate for same UUID, skipping',callUUID);
-            console.log('====================================');
             return
         }
 
         if (this.pendingCall && this.pendingCall.callUUID !== callUUID) {
-            console.log('====================================');
-            console.log('reportCallEnded in callService for pending call',this.pendingCall.callUUID,'Failed','local');
-            console.log('====================================');
             this.nativePhone?.reportCallEnded(this.pendingCall.callUUID,'Failed','local')
             this.pendingCall=undefined
             this.emit('callPending',this.pendingCall)
@@ -334,9 +319,6 @@ class CallService extends EventEmitter{
             this.nativePhone?.reportCallEnded(callUUID,'Failed','local')
             this.emit('callPending',this.pendingCall)
             this.callCleanUp()
-            console.log('====================================');
-            console.log('reportCallEnded in callService for pending call timeout',callUUID,'Failed','local');
-            console.log('====================================');
         },timeoutMs);
     }
 
@@ -385,19 +367,9 @@ class CallService extends EventEmitter{
 
 
         if (sessionEvent.originator === 'remote' && (!this.canCall || this.callConnectingUUID || this.callStore.callUUIDMap.size>1)) {
-
-            console.log('====================================');
-            console.log('onIncomingSipCall in callService for remote call blocked');
-            console.log('====================================');
-        
             this.sipClient.endCall(sessionEvent.request.call_id)
             return
         }
-
-
-        console.log('====================================');
-        console.log('onIncomingSipCall in callService',sessionEvent.request.call_id);
-        console.log('====================================');
 
         let callUUID=this.makeSureUUIDisUUID4(sessionEvent.request.call_id);
         let showIncomingCallScreen=true;
@@ -409,9 +381,6 @@ class CallService extends EventEmitter{
       
        
         if(this.pendingCall&&this.pendingCallTimeout&& this.pendingCall.callUUID===this.makeSureUUIDisUUID4(sessionEvent.request.call_id)){
-            console.log('====================================');
-            console.log('onIncomingSipCall in callService for pending call',this.pendingCall.callUUID);
-            console.log('====================================');
             callUUID=this.pendingCall.callUUID
             name=this.pendingCall.name      
             isAnswered=this.pendingCall.isAnswered
@@ -421,9 +390,6 @@ class CallService extends EventEmitter{
             this.pendingCallTimeout=undefined
         }
         if (this.pendingCall&& this.pendingCallTimeout&& this.pendingCall.callUUID!==this.makeSureUUIDisUUID4(sessionEvent.request.call_id)) {
-            console.log('====================================');
-            console.log('onIncomingSipCall in callService for pending call mismatch',this.pendingCall.callUUID);
-            console.log('====================================');
             this.nativePhone?.reportCallEnded(this.pendingCall.callUUID,'Failed','local')
             this.pendingCall=undefined
             BackgroundTimer.clearTimeout(this.pendingCallTimeout)
@@ -462,13 +428,6 @@ class CallService extends EventEmitter{
     onSipCallFailed(sessionEvent:any){
 
        if (sessionEvent.originator === 'local') {
-            // const calls= this.callStore.getAllCalls()
-            // calls.forEach((call)=>{
-            //     this.nativePhone?.reportCallEnded(call.callUUID,sessionEvent.cause,'local')
-            //     this.callStore.removeCallByCallUUID(call.callUUID)
-            //     this.emit('callEnded',call)
-            // })
-            // this.callCleanUp()
             return; 
        }
         const call=this.callStore.getCallBySessionId(sessionEvent.message.call_id);
@@ -489,19 +448,6 @@ class CallService extends EventEmitter{
 
 
         if (sessionEvent.originator === 'local') {
-
-
-            // const calls= this.callStore.getAllCalls()
-            // calls.forEach((call)=>{
-
-            //     this.nativePhone?.reportCallEnded(call.callUUID,sessionEvent.cause,'local')
-            //     this.callStore.removeCallByCallUUID(call.callUUID)
-            //     this.emit('callEnded',call)
-            // })
-
-
-            // this.callCleanUp()
-
             return; 
         }
         
@@ -556,9 +502,6 @@ class CallService extends EventEmitter{
         this.emit('callUpdated',call)
     }
 
-    // onSipCallPeerConnection(session:any){
-        
-    // }
 
     onSipCallProgress(session:any){
        
@@ -572,11 +515,6 @@ class CallService extends EventEmitter{
     }
 
     onIncomingFcmCall(callUUID:string,handle:string,name:string){
-
-        console.log('====================================');
-        console.log('onIncomingFcmCall in callService',callUUID,handle,name);
-        console.log('====================================');
-
         this.nativePhone?.showIncomingCall(callUUID,handle,name)
     }
 
@@ -589,7 +527,6 @@ class CallService extends EventEmitter{
     startedCall(handle:string,callUUID:string,name?:string){
    
         name = name || handle
-        // handle= handle.replace(/[^\d+*#]/g, '')
         if (!this.canCall) {
  
             this.pendingOutgoingCall={callUUID,handle,name}
@@ -653,7 +590,6 @@ class CallService extends EventEmitter{
     makeCall(handle:string, name?:string, calldata?:string){
 
         if (!this.canCall) {        
-            console.log("makeCall failed");
             this.emit('outgoingCallFailed')
             return
         }
@@ -684,10 +620,6 @@ class CallService extends EventEmitter{
 
     answeredCall(callUUID:string){
 
-    console.log('====================================');
-    console.log('answeredCall in callService',callUUID);
-    console.log('====================================');
-    
         if (this.pendingCall&& this.pendingCall.callUUID===callUUID) {
             this.pendingCall.isAnswered=true
             this.emit('callPending',this.pendingCall)

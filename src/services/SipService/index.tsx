@@ -86,17 +86,17 @@ class SipClient {
             console.log('====================================');
             return;
         }
-        const statusMap = { 0: 'STATUS_INIT', 1: 'STATUS_READY', 2: 'STATUS_USER_CLOSED', 3: 'STATUS_NOT_READY' };
-        const closeTimerPending = this.sipUA._closeTimer !== null && this.sipUA._closeTimer !== undefined;
-        console.log('====================================');
-        console.log('[SipService.init] isConnected:', this.sipUA.isConnected(), '| UA status:', statusMap[this.sipUA.status as keyof typeof statusMap] ?? this.sipUA.status, '| closeTimer:', closeTimerPending ? 'PENDING (deferred disconnect!)' : 'null');
-        console.log('====================================');
+        // const statusMap = { 0: 'STATUS_INIT', 1: 'STATUS_READY', 2: 'STATUS_USER_CLOSED', 3: 'STATUS_NOT_READY' };
+        // const closeTimerPending = this.sipUA._closeTimer !== null && this.sipUA._closeTimer !== undefined;
+        // console.log('====================================');
+        // console.log('[SipService.init] isConnected:', this.sipUA.isConnected(), '| UA status:', statusMap[this.sipUA.status as keyof typeof statusMap] ?? this.sipUA.status, '| closeTimer:', closeTimerPending ? 'PENDING (deferred disconnect!)' : 'null');
+        // console.log('====================================');
         if (this.sipUA.isConnected() && this.sipUA.status !== 2 /* STATUS_USER_CLOSED */) {
-            console.log('[SipService.init] ✓ truly connected and ready → skipping start()');
+            // console.log('[SipService.init] ✓ truly connected and ready → skipping start()');
             return;
         }
         if (this.sipUA.isConnected() && this.sipUA.status === 2) {
-            console.log('[SipService.init] ⚠️  isConnected=true BUT status=USER_CLOSED — closeTimer pending → calling start() to force proper restart');
+            // console.log('[SipService.init] ⚠️  isConnected=true BUT status=USER_CLOSED — closeTimer pending → calling start() to force proper restart');
         }
         this.sipUA.start();
     }
@@ -242,14 +242,7 @@ class SipClient {
 
     answerCall(sessionId:string){ 
 
-        console.log('====================================');
-        console.log('answerCall in SipService',sessionId);
-        console.log('====================================');
-
         const session=this.sessionMap.get(sessionId);
-        console.log('====================================');
-        console.log('session',session);
-        console.log('====================================');
         if (session) {
             session.answer(callOptions);
         }

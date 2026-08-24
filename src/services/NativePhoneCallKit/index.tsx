@@ -34,6 +34,8 @@ class NativePhone{
 
     private callStartingMap=new Map<string,string>();
     public isInitialized:boolean=false;
+    private initPromise:Promise<void>|null=null;
+    private listenersRegistered:boolean=false;
 
     constructor(callService:CallServiceType) {
 
@@ -55,16 +57,7 @@ class NativePhone{
               )
             : null;
 
-        if (Platform.OS==='ios') {
-            this.init();
-            return;
-        }
-
-        this.checkPermissions().then((hasPermissions)=> {
-            if (hasPermissions) {
-                this.init();
-            }
-        });
+        void this.init();
 
     }
 
@@ -78,6 +71,24 @@ class NativePhone{
     }
 
     async init(){
+
+        if (this.isInitialized) {
+            return;
+        }
+
+        // Callers race: the constructor starts init() and callService.start() may
+        // call it again before the first one resolves. Share the in-flight promise,
+        // but drop it afterwards so a failed setup can still be retried.
+        if (!this.initPromise) {
+            this.initPromise=this.setup().finally(()=> {
+                this.initPromise=null;
+            });
+        }
+
+        return this.initPromise;
+    }
+
+    private async setup(){
 
         const prompts=promptsInstance.getPrompts()
 
@@ -106,7 +117,7 @@ class NativePhone{
 
             this.registerEventsListeners();
             this.isInitialized=true;
-          } catch (error) {
+        } catch (error) {
             RNCallKeep.setAvailable(false);
             RNCallKeep.canMakeMultipleCalls(false);
 
@@ -121,6 +132,12 @@ class NativePhone{
 
     registerEventsListeners(){
 
+        // RNCallKeep.addEventListener appends without de-duplicating, so a retried
+        // setup would otherwise handle every call event twice.
+        if (this.listenersRegistered) {
+            return;
+        }
+        this.listenersRegistered=true;
 
         RNCallKeep.addEventListener('didReceiveStartCallAction',(obj)=> this.onNativeCallStart(obj));
         RNCallKeep.addEventListener('answerCall',({callUUID})=>this.onNativeCallAnswer(callUUID));
@@ -146,7 +163,9 @@ class NativePhone{
 
 
     removeEventsListeners(){
-        
+
+        this.listenersRegistered=false;
+
         RNCallKeep.removeEventListener('didReceiveStartCallAction');
         RNCallKeep.removeEventListener('answerCall');
         RNCallKeep.removeEventListener('endCall');
@@ -198,11 +217,6 @@ class NativePhone{
 
     onNativeCallAnswer(callUUID:string){
 
-      
-      console.log('====================================');
-      console.log('onNativeCallAnswer',callUUID);
-      console.log('====================================');
-   
       try {
             this.callService.answeredCall(callUUID);
             if (Platform.OS==='android') {
@@ -285,14 +299,7 @@ class NativePhone{
 
     onNativeAndroidCallShow(handle:string, callUUID:string, name:string){
 
-        console.log('====================================');
-        console.log('onNativeAndroidCallShow in NativePhoneCallKit',handle, callUUID, name);
-        console.log('====================================');
-
         if (this.androidCallBridge?.incomingCallScreenActive && this.androidCallBridge?.incomingCallScreenPayload?.uuid!==callUUID) {  
-            console.log('====================================');
-            console.log('reportCallEnded in NativePhoneCallKit',callUUID,'Failed','local');
-            console.log('====================================');
             this.reportCallEnded(callUUID,'Failed','local');
             return;
         }
@@ -311,10 +318,6 @@ class NativePhone{
 
     onNativeCallDisplay(event:any){
 
-        console.log('====================================');
-        console.log('onNativeCallDisplay in NativePhoneCallKit',event);
-        console.log('====================================');
-
         this.callService.callScreenDisplayed(event.callUUID,event.handle,event.localizedCallerName);
         this.callService.emitSdkEvent('callScreenDisplayed',{callUUID:event.callUUID, handle:event.handle, name:event.localizedCallerName});
     }  
@@ -328,7 +331,6 @@ class NativePhone{
     }
 
     showIncomingCall(callUUID:string, handle:string, name:string){
-        console.log('showIncomingCall in NativePhoneCallKit',callUUID, handle, name);
         RNCallKeep.displayIncomingCall(callUUID, handle, name || handle);
 
         // if (Platform.OS==='android') {
