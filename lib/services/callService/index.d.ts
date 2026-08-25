@@ -1,11 +1,13 @@
 import CallStore from "./callStore";
 import { AppStateStatus } from "react-native";
 import { EventEmitter } from 'eventemitter3';
+import { PromptsType } from '../../prompts';
 export declare const HELD = "held";
 export declare const CALL_PROGRESS = "call_progress";
 export declare const CONNECTING = "connecting";
 export declare const RINGING = "ringing";
 export declare const ESTABLISHED = "established";
+import AnalyticsService from "../AnalyticsService";
 export type AudioRoute = 'PHONE' | 'SPEAKER' | 'HEADSET' | 'BLUETOOTH';
 export interface Call {
     sessionId: string;
@@ -35,6 +37,7 @@ declare class CallService extends EventEmitter {
     private sipClient;
     private notificationService;
     callStore: CallStore;
+    analyticsService: AnalyticsService;
     callConnectingUUID: string | undefined;
     private pendingCall;
     private pendingCallTimeout;
@@ -44,11 +47,22 @@ declare class CallService extends EventEmitter {
     appState: AppStateStatus;
     sipServiceInitFailed: boolean;
     callServiceDeviceId: string | undefined;
+    extraCallData: {
+        callUUID: string;
+        callData: string;
+    } | null;
+    specialHandleCall: {
+        handle: string;
+        callUUID: string;
+    } | null;
     constructor();
-    init(token: string): Promise<void>;
+    saveDev(isDev: boolean): Promise<void>;
+    setPermissionsPrompts(prompts: PromptsType): void;
+    getAudioRecordPermission(): Promise<unknown>;
+    start(token: string, isDev?: boolean): Promise<false | undefined>;
     saveToken(token: string): Promise<boolean>;
     registerPushToken(pushToken: string, platform: "a" | "i"): void;
-    initiateCallService(): void;
+    initiateCallService(): Promise<void>;
     appStateListener(): void;
     stopCallService(): void;
     removeSipCredentials(): void;
@@ -66,7 +80,8 @@ declare class CallService extends EventEmitter {
     onIncomingFcmCall(callUUID: string, handle: string, name: string): void;
     onSipLocalSessionCreated(): void;
     startedCall(handle: string, callUUID: string, name?: string): void;
-    makeCall(handle: string, name?: string): void;
+    checkIfStringHandle(handle: string): boolean;
+    makeCall(handle: string, name?: string, calldata?: string): void;
     answeredCall(callUUID: string): void;
     terminateCall(): void;
     endCallByUUID(callUUID: string): void;

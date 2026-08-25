@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import RNCallKeep, { CONSTANTS } from "react-native-callkeep";
 import { CallServiceType } from "../callService";
 import uuid from 'react-native-uuid';
+import promptsInstance from "../../prompts";
 // import InCallManager from 'react-native-incall-manager';
 // import { DeviceEventEmitter } from 'react-native';
 
@@ -30,6 +31,7 @@ class NativePhone{
     private static instance:NativePhone;
 
     private callStartingMap=new Map<string,string>();
+    public isInitialized:boolean=false;
 
     constructor(callService:CallServiceType) {
 
@@ -43,13 +45,33 @@ class NativePhone{
 
         NativePhone.instance = this;
         this.callService = callService;
-        this.init();
-        
+
+        if (Platform.OS==='ios') {
+            this.init();
+            return;
+        }
+
+        this.checkPermissions().then((hasPermissions)=> {
+            console.log('hasPermissions',hasPermissions);
+            if (hasPermissions) {
+                this.init();
+            }
+        });
+
+    }
+
+    async checkPermissions(){
+        const isEnabled=await RNCallKeep.checkPhoneAccountEnabled();
+
+        if (!isEnabled) {
+            return false;
+        }
+        return true;
     }
 
     async init(){
 
-
+        const prompts=promptsInstance.getPrompts()
 
         try {
             await RNCallKeep.setup({
@@ -57,10 +79,10 @@ class NativePhone{
                 appName: 'N4COM App',
               },
               android: {
-                alertTitle: 'Permissions required',
-                alertDescription: 'This application needs to access your phone accounts',
-                cancelButton: 'Cancel',
-                okButton: 'ok',
+                alertTitle: prompts.phoneAccountsPermissions.title,
+                alertDescription: prompts.phoneAccountsPermissions.body,
+                cancelButton: prompts.phoneAccountsPermissions.buttons.cancel,
+                okButton: prompts.phoneAccountsPermissions.buttons.ok,
                 foregroundService: {
                   channelId: 'com.buniq.n4com',
                   channelName: 'Foreground service for my app',
@@ -75,6 +97,7 @@ class NativePhone{
             RNCallKeep.canMakeMultipleCalls(false);
 
             this.registerEventsListeners();
+            this.isInitialized=true;
           } catch (error) {
             RNCallKeep.setAvailable(false);
             RNCallKeep.canMakeMultipleCalls(false);
@@ -149,7 +172,7 @@ class NativePhone{
 
 
             const callUUID= getNewUuid();
-            RNCallKeep.startCall(callUUID, obj.handle, obj.handle,'number',false);
+            RNCallKeep.startCall(callUUID, obj.handle, obj.handle,'generic',false);
             return
         }
           
@@ -158,6 +181,8 @@ class NativePhone{
         this.callService.startedCall(obj.handle,obj.callUUID,obj.name? obj.name:name);
         
         name ?? this.callStartingMap.delete(obj.callUUID);
+
+        this.callService.analyticsService.trackEvent('onNativeCallStart',{callUUID:obj.callUUID, handle:obj.handle, name:obj.name});
     }
 
     onNativeCallAnswer(callUUID:string){
@@ -175,14 +200,28 @@ class NativePhone{
             // this.callService.reportCallError(error);
       }
 
+      this.callService.analyticsService.trackEvent('answeredCall',{callUUID:callUUID});
+
     }
 
     onNativeCallEnd(callUUID:string){
         this.callService.endCallByUUID(callUUID);
+        this.callService.analyticsService.trackEvent('onNativeCallEnd',{callUUID:callUUID});
     }
 
     onNativeCallLoad(events:{name:string,data:any}[]){
         
+        const eventSummary = {
+            count: events.length,
+            eventTypes: events.map(ev => ev.name),
+            callUUIDs: events
+                .map(ev => ev.data?.callUUID)
+                .filter(Boolean)
+        };
+        
+        this.callService.analyticsService.trackEvent('loadedEvents', eventSummary);
+    
+
         let endedCallsUUID= events.map((ev: {name:string,data:any}) => {
           if (ev.name==='RNCallKeepPerformEndCallAction') {
              return ev.data.callUUID; 
@@ -191,13 +230,16 @@ class NativePhone{
         });
       
       events.forEach((element: {name:string,data:any}) => {
+
           switch (element.name) {
+
+            
              
               case 'RNCallKeepDidDisplayIncomingCall':
      
                   if (endedCallsUUID.indexOf(element.data.callUUID)=== -1 ) {
                       this.callService.callScreenDisplayed(element.data.callUUID,element.data.handle,element.data.localizedCallerName);
-                  }
+                    }
                   break;
               case 'RNCallKeepPerformAnswerCallAction':
                   this.callService.preLaunchAnswerCall(element.data.callUUID);
@@ -237,7 +279,7 @@ class NativePhone{
     onNativeCallDisplay(event:any){
 
         this.callService.callScreenDisplayed(event.callUUID,event.handle,event.localizedCallerName);
-
+        this.callService.analyticsService.trackEvent('callScreenDisplayed',{callUUID:event.callUUID, handle:event.handle, name:event.localizedCallerName});
     }  
 
     setEstablishedCall(callUUID:string){
@@ -245,16 +287,19 @@ class NativePhone{
             return;
         }
         RNCallKeep.setCurrentCallActive(callUUID);
+        RNCallKeep.reportConnectedOutgoingCallWithUUID(callUUID);
     }
 
     showIncomingCall(callUUID:string, handle:string, name:string){
         console.log('showIncomingCall',callUUID, handle, name);
-        RNCallKeep.displayIncomingCall(callUUID, handle, name);
+        RNCallKeep.displayIncomingCall(callUUID, handle, "Alpitour Amico H24");
 
         if (Platform.OS==='android') {
   
             this.onNativeCallDisplay({callUUID, handle, localizedCallerName:name, hasVideo:false, fromPushKit:null, payload:null });
         }
+
+        this.callService.analyticsService.trackEvent('showIncomingCall',{callUUID, handle, name});
       
     }  
 
@@ -264,11 +309,12 @@ class NativePhone{
         const causeCode= parseCauseCode(cause);
         RNCallKeep.reportEndCallWithUUID(callUUID,causeCode);
 
-
+        this.callService.analyticsService.trackEvent('reportCallEnded',{callUUID, cause, originator});
     }
 
     androidEndCallHandler(payload:any){
         RNCallKeep.endCall(payload.uuid);
+        this.callService.analyticsService.trackEvent('androidEndCallHandler',{callUUID:payload.uuid});
     }
 
     androidAnswerCallHandler(payload:any){
@@ -306,14 +352,20 @@ class NativePhone{
 
 
     startCall( callUUID:string,handle:string, name:string){
-        RNCallKeep.startCall(callUUID, handle, name,'number',false);
+
+    
+
+        RNCallKeep.startCall(callUUID, handle, name,'generic',false);
         RNCallKeep.updateDisplay(callUUID, name, handle);
+        RNCallKeep.reportConnectingOutgoingCallWithUUID(callUUID);
         this.callStartingMap.set(callUUID,name);
+        this.callService.analyticsService.trackEvent('startCall',{callUUID, handle, name});
     }
 
     endCall(callUUID:string){
    
         RNCallKeep.endCall(callUUID);
+        this.callService.analyticsService.trackEvent('endCall',{callUUID});
     }
 
     holdCall(callUUID:string,hold:boolean){

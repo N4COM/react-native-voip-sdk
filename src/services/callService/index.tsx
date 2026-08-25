@@ -3,10 +3,11 @@ import NotificationService from "../NotificationService";
 import SipClient from "../SipService";
 import CallStore from "./callStore";
 import uuid from 'react-native-uuid';
-import {AppState, AppStateStatus, Platform } from "react-native";
+import {Alert, AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
 import BackgroundTimer from 'react-native-background-timer';
 import {EventEmitter} from 'eventemitter3';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import prompts, { PromptsType } from '../../prompts';
 
 
 
@@ -17,8 +18,11 @@ export const RINGING= 'ringing';
 export const ESTABLISHED= 'established';
 // @ts-expect-error TS(7016): Could not find a declaration file for module 'cryp... Remove this comment to see the full error message
 import {MD5} from 'crypto-js';
+import promptsInstance from "../../prompts";
+import AnalyticsService from "../AnalyticsService";
 
 export type AudioRoute='PHONE'|'SPEAKER'|'HEADSET'|'BLUETOOTH'
+
 
 
 
@@ -83,7 +87,7 @@ class CallService extends EventEmitter{
     private sipClient!:SipClient
     private notificationService!:NotificationService
     public callStore!:CallStore
-
+    public analyticsService!:AnalyticsService
     public callConnectingUUID:string|undefined
 
     private pendingCall:PendingCall|undefined
@@ -101,6 +105,16 @@ class CallService extends EventEmitter{
 
     public callServiceDeviceId:string|undefined
 
+    public extraCallData:{
+        callUUID:string,
+        callData:string
+    }|null=null
+
+    public specialHandleCall:{
+        handle:string,
+        callUUID:string,
+    }|null=null
+
 
     constructor(){
         super()
@@ -109,22 +123,72 @@ class CallService extends EventEmitter{
         this.nativePhone= new NativePhone(this)
         this.sipClient= new SipClient(this)
         this.notificationService= new NotificationService(this)
+        this.analyticsService= AnalyticsService.getInstance()
         this.appStateListener()    
 
     }
 
+    async  saveDev(isDev:boolean){
+        await AsyncStorage.setItem('isDev',isDev.toString())
+    }
 
-    async init(token:string){
+    setPermissionsPrompts(prompts:PromptsType){
+        promptsInstance.setPrompts(prompts)
+    }
+
+    async getAudioRecordPermission(){
+
+        return new Promise((resolve,reject)=>{
+
+            if (Platform.OS==='ios') {
+                resolve(true)
+                return
+            }
+
+            PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO).then((hasPermission)=>{
+
+                if (hasPermission) {
+                    resolve(true)
+                    return
+                }
+
+                const prompts=promptsInstance.getPrompts()
+                
+                Alert.alert(prompts.initialPermissions.title, prompts.initialPermissions.body, [
+                    {text: prompts.initialPermissions.buttons.cancel, style: 'cancel'},
+                    {text: prompts.initialPermissions.buttons.ok, onPress: async () => {
+                        const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
+                        if (!granted) {
+                            resolve(false);
+                            return;
+                        }
+                        resolve(true);
+                        return;
+                    }},
+                ]);
+            })
+        })
+    }
+
+    async start(token:string, isDev?:boolean){
+
+        const granted=await this.getAudioRecordPermission()
+        if (!granted) {
+            return false
+        }
         const saved=await this.saveToken(token)
+        if (isDev) {
+            await this.saveDev(isDev)
+        }
         if (!saved) {
             return
         }
-        this.initiateCallService()
+        await this.initiateCallService()
     }
 
     async saveToken(token:string){
         try {
-            await AsyncStorage.setItem('token',token)
+            await AsyncStorage.setItem('N4COM_TOKEN',token)
             return true
         } catch (error) {
             console.log('====================================');
@@ -139,9 +203,15 @@ class CallService extends EventEmitter{
        this.sipClient.registerPushToken(pushToken,platform);
     }
 
-    initiateCallService(){
+    async initiateCallService(){
         this.sipClient.registerClient()
-        this.notificationService.registerAndroid()
+        if (Platform.OS==='android') {
+            this.notificationService.registerAndroid()
+        }
+
+        if (!this.nativePhone.isInitialized) {
+            this.nativePhone.init()
+        }
     }
 
     appStateListener(){
@@ -177,12 +247,10 @@ class CallService extends EventEmitter{
 
 
         if (call) {
-            console.log('callScreenDisplayed call',call);
             return
         }
 
         if (this.pendingCall&& this.pendingCall.callUUID !== callUUID &&this.pendingCallTimeout) {
-            console.log('callScreenDisplayed pendingCall',this.pendingCall);
             this.nativePhone?.reportCallEnded(this.pendingCall.callUUID,'Failed','local')
             BackgroundTimer.clearTimeout(this.pendingCallTimeout)
             this.pendingCall=undefined
@@ -192,10 +260,8 @@ class CallService extends EventEmitter{
 
 
         this.pendingCall={callUUID,handle,name,isAnswered:false}
-        console.log('callScreenDisplayed pendingCall',this.pendingCall);
         // auto destroy the call after 5 seconds
         this.pendingCallTimeout= BackgroundTimer.setTimeout(()=>{
-            console.log('callScreenDisplayed pendingCallTimeout');
             this.emit('callFailed')
             this.pendingCall=undefined
             this.nativePhone?.reportCallEnded(callUUID,'Failed','local')
@@ -441,7 +507,7 @@ class CallService extends EventEmitter{
     startedCall(handle:string,callUUID:string,name?:string){
    
         name = name || handle
-        handle= handle.replace(/[^\d+*#]/g, '')
+        // handle= handle.replace(/[^\d+*#]/g, '')
         if (!this.canCall) {
  
             this.pendingOutgoingCall={callUUID,handle,name}
@@ -459,9 +525,10 @@ class CallService extends EventEmitter{
             
         }
 
+        let extraCallData=this.extraCallData?.callUUID === callUUID ? this.extraCallData.callData : undefined
+        let sipHandle = this.specialHandleCall?.callUUID=== callUUID ? this.specialHandleCall.handle : handle
 
-
-        const session= this.sipClient.startCall(handle);
+        const session= this.sipClient.startCall(sipHandle,extraCallData);
         
         const newCall:Call= {
             sessionId:session._request.call_id,
@@ -480,16 +547,28 @@ class CallService extends EventEmitter{
         this.callStore.addCall(newCall);
         this.emit('newCall',newCall)
         this.focusedCallUUID=callUUID
+        this.specialHandleCall=null;
     
 
     }
 
+    checkIfStringHandle(handle:string){
 
-    makeCall(handle:string, name?:string){
+        if( Platform.OS==='ios') {
+            return false
+        }
 
-        console.log("makeCall",handle, name);
-    
+        // check if the handle contains only numbers and * and #
+        if (/^[0-9*#]+$/.test(handle)) {
+            console.log("makeCall not string handle",handle);
+            return false
+        }
+        console.log("makeCall string handle",handle);
+        return true
+    }
 
+
+    makeCall(handle:string, name?:string, calldata?:string){
 
         if (!this.canCall) {        
             console.log("makeCall failed");
@@ -497,6 +576,25 @@ class CallService extends EventEmitter{
             return
         }
         const callUUID= getNewUuid();
+
+        const isStringHandle=this.checkIfStringHandle(handle)
+        if (isStringHandle) {
+            this.specialHandleCall={
+                handle,
+                callUUID:callUUID
+            }
+        }
+
+        if (calldata) {
+            this.extraCallData={
+                callUUID:callUUID,
+                callData:calldata
+            };
+        }else{
+            this.extraCallData=null;
+        }
+
+
         this.nativePhone?.startCall(callUUID,handle,name? name:handle)
     
     }
@@ -547,7 +645,13 @@ class CallService extends EventEmitter{
 
         const call=this.callStore.getCallByCallUUID(callUUID);
         if (call) {
-            this.sipClient.endCall(call.sessionId)
+
+            // check if the call is established
+            if (call?.callStatus==='established') {
+                this.sipClient.endCall(call.sessionId)
+            }else{
+                this.sipClient.endCall(call.sessionId,"Busy Here",486)
+            }
             this.sipClient.removeSession(call.sessionId)
             this.callStore.removeCallByCallUUID(callUUID)
             this.emit('callEnded',call)

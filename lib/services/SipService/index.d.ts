@@ -5,9 +5,13 @@ declare class SipClient {
     private sessionMap;
     private iceTimeOutId;
     private configurationParams;
+    private regFlag;
     isRegistered: boolean;
+    platform: string | undefined;
+    pushToken: string | undefined;
     constructor(callService: CallServiceType);
     registerClient(): Promise<void>;
+    customRegister(): Promise<void>;
     registerPushToken(pushToken: string, platform: "a" | "i"): Promise<void>;
     init(): void;
     registerEventsListeners(): void;
@@ -28,8 +32,8 @@ declare class SipClient {
     handleSdpRTCSession(e: any): void;
     answerCall(sessionId: string): void;
     removeSession(sessionId: string): void;
-    endCall(sessionId: string): void;
-    startCall(handle: string): any;
+    endCall(sessionId: string, reason_phrase?: string, status_code?: number): void;
+    startCall(handle: string, extraCallData?: string): any;
     holdCall(sessionId: string, isHeld: boolean): void;
     muteCall(sessionId: string, isMuted: boolean): void;
     attendedTransferCall(originCall: Call, targetCall: Call): void;

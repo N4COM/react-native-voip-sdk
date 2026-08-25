@@ -2,13 +2,20 @@ import React, { createContext,useContext,useEffect, useReducer, useState } from 
 import { Call, PendingCall } from "../../services/callService";
 import callService from "../../services/callService";
 import BackgroundTimer from 'react-native-background-timer';
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
+import promptsInstance, { PromptsType } from "../../prompts";
 
 
 export type TransferType='blind'|'attended';
-
+export type AnalyticsOptions={
+    isEnabled:true,
+    userId:string,
+    properties:Record<string, any>
+} | {
+    isEnabled:false,
+} 
 interface CallServiceContext{
-    startCall:(handle:string,name?:string)=>void;
+    startCall:(handle:string,name?:string, calldata?:string)=>void;
     endCall:()=>void;
     holdCall:()=>void;
     swapCall:()=>void;
@@ -22,7 +29,9 @@ interface CallServiceContext{
     setAudioRoute:(audioRoute:string)=>Promise<void>;
     getAudioRoutes:()=>Promise<void>;
     callServiceSipInitFailed:boolean;
-    initiateCallService:(token:string)=>void;
+    initiateCallService:(token:string , isDev?:boolean)=>void;
+    setPermissionsPrompts:(prompts:PromptsType)=>void;
+    enableAnalytics:(options : AnalyticsOptions)=>void;
 }
 
 
@@ -64,9 +73,17 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
 
   
     
-    const startCall=(handle:string,name?:string)=>{
+    const startCall=(handle:string,name?:string, calldata?:string)=>{
         console.log("startCall from provider",handle,name);
-        callService.makeCall(handle,name);
+        //  make the handle follow the format 'sip:handle@alpitour-test.n4com.com'
+
+        if (!handle.startsWith('sip:') && Platform.OS === 'android') {
+            handle = `sip:${handle}@alpitour-test.n4com.com`;
+        }
+        
+        console.log("handle after formatting",handle);
+        
+        callService.makeCall(handle,name,calldata);
     }
 
     const endCall=()=>{
@@ -107,13 +124,29 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
         await callService.setAudioRoute(audioRoute);
     }
 
-    const initiateCallService=(token:string)=>{
-        callService.init(token);
+    const initiateCallService= async (token:string , isDev?:boolean)=>{
+        await callService.start(token, isDev);        
+    }
+
+
+    const enableAnalytics=(options:AnalyticsOptions)=>{
+        if (options.isEnabled) {
+            callService.analyticsService.enableAnalytics(true);
+            callService.analyticsService.identify(options.userId, options.properties);
+        }
+        else {
+            callService.analyticsService.enableAnalytics(false);
+            callService.analyticsService.resetAnalytics();
+        }
     }
 
     const stopCallService=()=>{
         callService.stopCallService();
         callService.removeSipCredentials();
+    }
+
+    const setPermissionsPrompts=(prompts:PromptsType)=>{
+        callService.setPermissionsPrompts(prompts);
     }
 
 
@@ -149,11 +182,21 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
        });
 
        callService.addListener('callFailed', () => {
-             Alert.alert("Call Failed");
+            const prompts=promptsInstance.getPrompts()
+            Alert.alert(prompts.callFailed.title, prompts.callFailed.body, [
+                {text: prompts.callFailed.buttons.ok, onPress: () => {
+                    console.log("Call Failed button pressed");
+                }},
+             ]);
        });
 
        callService.addListener('outgoingCallFailed', () => {
-             Alert.alert("Outgoing Call Failed");
+            const prompts=promptsInstance.getPrompts()
+             Alert.alert(prompts.callFailed.title, prompts.callFailed.body, [
+                {text: prompts.callFailed.buttons.ok, onPress: () => {
+                    console.log("Outgoing Call Failed button pressed");
+                }},
+             ]);
        });
 
         return () => {
@@ -175,7 +218,7 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
             startCall,endCall,holdCall,swapCall,toggleMuteCall
             ,attendedTransferCall,blindTransferCall,sendDTMF,
             setAudioRoute,getAudioRoutes,pendingCall,
-            callState,callServiceSipInitFailed,initiateCallService,stopCallService}}>
+            callState,callServiceSipInitFailed,initiateCallService,stopCallService,setPermissionsPrompts,enableAnalytics}}>
             {children}
         </CallServiceContext.Provider>
     )

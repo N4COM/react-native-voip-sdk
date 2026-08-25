@@ -2092,10 +2092,17 @@
   resolved "https://registry.yarnpkg.com/@pkgr/core/-/core-0.2.4.tgz#d897170a2b0ba51f78a099edccd968f7b103387c"
   integrity sha512-ROFF39F6ZrnzSUEmQQZUar0Jt4xVoP9WnDRdWwF4NNcXs3xBTLgBUDoOwW141y1jP+S8nahIbdxbFC7IShw9Iw==
 
-"@react-native-async-storage/async-storage@^2.1.2":
-  version "2.1.2"
-  resolved "https://registry.yarnpkg.com/@react-native-async-storage/async-storage/-/async-storage-2.1.2.tgz#8aae432adfc20800308e2ef3ce380864f0f9def8"
-  integrity sha512-dvlNq4AlGWC+ehtH12p65+17V0Dx7IecOWl6WanF2ja38O1Dcjjvn7jVzkUHJ5oWkQBlyASurTPlTHgKXyYiow==
+"@posthog/core@1.5.2":
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/@posthog/core/-/core-1.5.2.tgz#06f1277c5ac9a3d5a17bc3800172a392e594f44c"
+  integrity sha512-iedUP3EnOPPxTA2VaIrsrd29lSZnUV+ZrMnvY56timRVeZAXoYCkmjfIs3KBAsF8OUT5h1GXLSkoQdrV0r31OQ==
+  dependencies:
+    cross-spawn "^7.0.6"
+
+"@react-native-async-storage/async-storage@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@react-native-async-storage/async-storage/-/async-storage-2.2.0.tgz#a3aa565253e46286655560172f4e366e8969f5ad"
+  integrity sha512-gvRvjR5JAaUZF8tv2Kcq/Gbt3JHwbKFYfmb445rhOj6NUMx3qPLixmDx5pZAyb9at1bYvJ4/eTUipU5aki45xw==
   dependencies:
     merge-options "^3.0.4"
 
@@ -6697,9 +6704,9 @@ jsonfile@^6.0.1:
   optionalDependencies:
     graceful-fs "^4.1.6"
 
-"jssip@https://github.com/men3malgmatti/JsSIP.git#n4com-app":
+"jssip@https://github.com/N4COM/JsSIP.git#n4com-app":
   version "3.2.11-rn-2"
-  resolved "https://github.com/men3malgmatti/JsSIP.git#86a34c9026179bd36da030b9499fbdcd1fc3f0b4"
+  resolved "https://github.com/N4COM/JsSIP.git#f319cf870f4bcda9062c25d2a066006193697a76"
   dependencies:
     debug "^3.1.0"
     events "^2.0.0"
@@ -7854,6 +7861,13 @@ postcss@~8.4.32:
     picocolors "^1.1.1"
     source-map-js "^1.2.1"
 
+posthog-react-native@^4.12.0:
+  version "4.12.0"
+  resolved "https://registry.yarnpkg.com/posthog-react-native/-/posthog-react-native-4.12.0.tgz#702966499154f75c9d9bd87e1b9d209c142784cb"
+  integrity sha512-lUHCPU6tZtMfTOF2nJKoC4M72CunW89m2BHBJ6AcRT9LTGw7FaqM55eOE3yvWqzZ3F957BFHTm6b5tBC6EdLJA==
+  dependencies:
+    "@posthog/core" "1.5.2"
+
 prelude-ls@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/prelude-ls/-/prelude-ls-1.2.1.tgz#debc6489d7a6e6b0e7611888cec880337d316396"
@@ -8007,6 +8021,16 @@ react-native-debug@^3.0.0:
   integrity sha512-z78G50yvpYd6zjpOgHaXVf9pZ8e3o5cCqJtB11ToOrUCyi3aXQNLKSlcgO35SWPOiwabznmDzXvWPJZymBuAyA==
   dependencies:
     ms "0.7.1"
+
+react-native-device-info@^15.0.1:
+  version "15.0.1"
+  resolved "https://registry.yarnpkg.com/react-native-device-info/-/react-native-device-info-15.0.1.tgz#8a2716861bb8e491e0627f326bcc007c77d2e8f6"
+  integrity sha512-U5waZRXtT3l1SgZpZMlIvMKPTkFZPH8W7Ks6GrJhdH723aUIPxjVer7cRSij1mvQdOAAYFJV/9BDzlC8apG89A==
+
+react-native-localize@^3.6.0:
+  version "3.6.0"
+  resolved "https://registry.yarnpkg.com/react-native-localize/-/react-native-localize-3.6.0.tgz#2927c7f8e77339c2201581f6d99eb78fa5c48121"
+  integrity sha512-CByn67b9dPDBA7qvAx18PpXhuLqBbdTpedobGOUcjqiGuSAEXZzwas9ziMYSShAR2AvX2Cl7ePErCpj9V39Ctw==
 
 react-native-uuid@^2.0.3:
   version "2.0.3"

@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import SoftPhone from "../../classes/softPhone";
 import { Call, CallServiceType } from "../callService";
 
-const callOptions={
+const callOptions:any={
     'mediaConstraints' : { 'audio': true, 'video': false},
     'pcConfig': {
         'iceServers': [
@@ -15,18 +15,10 @@ const callOptions={
 }
 
 const getSoftPhoneCredentials = async (): Promise< SoftPhoneCredentials |undefined> => {
-
-    const token=await AsyncStorage.getItem('token')
-    if (!token) {
-        return undefined
-    }
     
     try {
         const response= await customFetch('/webphone',{ 
             method:'GET',
-            headers:{
-                'Authorization':`Bearer ${token}`
-            }
         })
         if (!response.ok) {
             const resData = await response.json()
@@ -79,9 +71,13 @@ class SipClient {
     private sessionMap:Map<string,any>=new Map();    
     private iceTimeOutId:number|null=null;
     private configurationParams:SoftPhoneCredentials|undefined;
-
+    private regFlag:boolean=false;
     public  isRegistered:boolean=false;
-    
+    public platform:string|undefined;
+    public pushToken:string|undefined;
+
+
+
     constructor(callService:CallServiceType) {   
         this.callService = callService;
         this.registerClient();
@@ -97,27 +93,62 @@ class SipClient {
             console.log('====================================');
             console.log('credentials not found');
             console.log('====================================');
+            this.callService.analyticsService.trackEvent('registerClientFailed');
             this.callService.onSipClientFailed();
             return          
         }
         const {ua,ownerID}= new SoftPhone(credentials.userName, credentials.password, credentials.realm, credentials.ownerID, credentials.webSocket);
         this.configurationParams=credentials;
         this.sipUA=ua;
-        
         this.init();
         this.registerEventsListeners();
         this.callService.setCallServiceDeviceId(credentials.id);
+        this.customRegister();
+    }
+
+    async customRegister(){
+
+        const registerCallback=()=>{
+
+            if (this.regFlag) {
+                return;
+            }
+            this.regFlag = true;
+            
+           this.sipUA.registrator().register();
+           this.sipUA.removeListener("registered",registerCallback);
+        }
+
+        const isDev=await AsyncStorage.getItem('isDev')
+        
+        if(!this.sipUA || !this.pushToken || !this.platform){
+            return;
+        }
+
+
+        this.sipUA.registrator().setExtraContactParams({
+            'app-id': isDev ? "alpitour-test" : "alpitour",
+            'pn-tok':  `${this.platform}:${this.pushToken}`,
+            'pn-type': "n4com"
+        });
+
+        if(this.sipUA.isConnected()){
+            this.sipUA.registrator().register();
+        }
+
+
+        this.sipUA.on("registered",registerCallback);
+
+
     }
 
     async registerPushToken(pushToken:string, platform:"a"|"i"){
         if(!pushToken){
             return;
         }
-        this.sipUA.registrator().setExtraContactParams({
-            'app-id': "alpitour",
-            'pn-tok':  `${platform}:${pushToken}`,
-            'pn-type': "n4com"
-        });
+        this.platform=platform;
+        this.pushToken=pushToken;
+        this.customRegister();
     }
 
     init(){
@@ -160,13 +191,16 @@ class SipClient {
         
         this.callService.onSipClientReady();
         this.isRegistered=true;
+        this.callService.analyticsService.trackEvent('sipClientRegistered');
     }
 
     handleUnRegistration(e:any){
-        
         // some logic here
         this.isRegistered=false;
         this.callService.canCall=false;
+        this.callService.analyticsService.trackEvent('sipClientUnregistered');
+
+        
     }
 
     handleNewRTCSession(sessionEvent:any){
@@ -179,11 +213,13 @@ class SipClient {
 
         if (sessionEvent.originator === 'remote' ) {
             this.callService.onIncomingSipCall(sessionEvent);
+            this.callService.analyticsService.trackEvent('sipIncomingCall',{callUUID:sessionEvent?.request?.call_id});
             return;
         }
 
         if (sessionEvent.originator === 'local') {
             this.callService.onSipLocalSessionCreated();
+            this.callService.analyticsService.trackEvent('sipLocalSessionCreated');
             return;
         }
 
@@ -205,11 +241,12 @@ class SipClient {
 
     handleFailedRTCSession(e:any){
         this.callService.onSipCallFailed(e);
-    
+        this.callService.analyticsService.trackEvent('sipCallFailed',{callUUID:e?.message?.call_id});
     }
 
     handleEndedRTCSession(e:any){
         this.callService.onSipCallEnded(e);
+        this.callService.analyticsService.trackEvent('sipCallEnded',{callUUID:e?.message?.call_id});
     }
 
     handleConfirmedRTCSession(e:any){
@@ -268,28 +305,40 @@ class SipClient {
         this.sessionMap.delete(sessionId);
     }
 
-    endCall(sessionId:string){
+    endCall(sessionId:string,reason_phrase?:string, status_code?:number){
 
-
+        this.callService.analyticsService.trackEvent('endCall',{callUUID:sessionId, reason_phrase, status_code});
 
         const session=this.sessionMap.get(sessionId);
         if (session) {
             try{
-                session.terminate({status_code:603,reason_phrase:'Decline'});
+                if (!status_code || !reason_phrase) {
+                    session.terminate()
+                    return
+                }                
+                session.terminate({status_code:status_code||486,reason_phrase:reason_phrase||'Busy'});
             }catch(e){
                 console.log('====================================');
                 console.log('error in endCall',e);
                 console.log('====================================');
+                this.callService.analyticsService.trackEvent('sipEndCallError',{callUUID:sessionId});
                 // this.callService.reportCallError(e);
             }
 
         }
     }
     
-    startCall(handle:string){
+    startCall(handle:string, extraCallData?:string){
+        
+        const options = {...callOptions}
 
-        const session = this.sipUA.call(handle,callOptions);
+        if (extraCallData) {
+            options.extraHeaders=[`X-2X-CallData: ${extraCallData}`];
+        }
+
+        const session = this.sipUA.call(handle,options);
         this.sessionMap.set(session._request.call_id,session);
+        this.callService.analyticsService.trackEvent('sipStartCall',{callUUID:session._request.call_id, handle});
         return session;
     }
 

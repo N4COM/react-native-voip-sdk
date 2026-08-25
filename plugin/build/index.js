@@ -70,7 +70,7 @@ var withCallKeepFix = function (config) {
                         "android:label": "Wazo",
                         "android:permission": "android.permission.BIND_TELECOM_CONNECTION_SERVICE",
                         // Use this to target android >= 11
-                        "android:foregroundServiceType": "camera|microphone",
+                        "android:foregroundServiceType": "microphone",
                     },
                     "intent-filter": [
                         {
@@ -85,6 +85,56 @@ var withCallKeepFix = function (config) {
                     ],
                 });
             }
+            // add permission to
+            return [2 /*return*/, config];
+        });
+    }); });
+};
+var withFirebaseModularHeadersFix = function (config) {
+    return (0, config_plugins_1.withPodfile)(config, function (config) { return __awaiter(void 0, void 0, void 0, function () {
+        var platformLineMatcher;
+        return __generator(this, function (_a) {
+            if (config.modResults.contents.includes("use_modular_headers!")) {
+                return [2 /*return*/, config];
+            }
+            platformLineMatcher = /(platform\s*:ios[^\n]*\n)/;
+            if (platformLineMatcher.test(config.modResults.contents)) {
+                config.modResults.contents = config.modResults.contents.replace(platformLineMatcher, "$1use_modular_headers!\n");
+            }
+            else {
+                config.modResults.contents = "use_modular_headers!\n".concat(config.modResults.contents);
+            }
+            return [2 /*return*/, config];
+        });
+    }); });
+};
+// Add required Android permissions
+var withAdditionalPermissions = function (config) {
+    return (0, config_plugins_1.withAndroidManifest)(config, function (config) { return __awaiter(void 0, void 0, void 0, function () {
+        var manifest, permissions;
+        return __generator(this, function (_a) {
+            manifest = config.modResults;
+            if (!manifest.manifest["uses-permission"]) {
+                manifest.manifest["uses-permission"] = [];
+            }
+            permissions = [
+                "android.permission.WRITE_EXTERNAL_STORAGE",
+                "android.permission.CAPTURE_AUDIO_HOTWORD",
+                "android.permission.CAPTURE_AUDIO_OUTPUT",
+                "android.permission.CAPTURE_MEDIA_OUTPUT",
+                "android.permission.CAPTURE_TUNER_AUDIO_INPUT",
+                "android.permission.CAPTURE_VOICE_COMMUNICATION_OUTPUT",
+                "android.permission.FOREGROUND_SERVICE_MICROPHONE",
+            ];
+            permissions.forEach(function (permission) {
+                if (!manifest.manifest["uses-permission"].some(function (item) { return item.$["android:name"] === permission; })) {
+                    manifest.manifest["uses-permission"].push({
+                        $: {
+                            "android:name": permission,
+                        },
+                    });
+                }
+            });
             return [2 /*return*/, config];
         });
     }); });
@@ -92,9 +142,11 @@ var withCallKeepFix = function (config) {
 // Compose multiple modifiers
 var withVoipPush = function (config) {
     config = (0, ios_1.withIosAppDelegate)(config);
+    config = withFirebaseModularHeadersFix(config);
     config = withPushNotification(config);
     config = (0, withCallkeep_js_1.default)(config);
     config = withCallKeepFix(config);
+    config = withAdditionalPermissions(config);
     return config;
 };
 exports.default = (0, config_plugins_1.createRunOncePlugin)(withVoipPush, pak.name, pak.version);
