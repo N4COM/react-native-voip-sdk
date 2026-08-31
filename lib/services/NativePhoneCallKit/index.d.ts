@@ -5,9 +5,12 @@ declare class NativePhone {
     private androidCallBridge;
     private callStartingMap;
     isInitialized: boolean;
+    private initPromise;
+    private listenersRegistered;
     constructor(callService: CallServiceType);
     checkPermissions(): Promise<boolean>;
     init(): Promise<void>;
+    private setup;
     registerEventsListeners(): void;
     removeEventsListeners(): void;
     getInitialEvents(): Promise<void>;
