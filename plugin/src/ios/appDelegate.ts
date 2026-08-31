@@ -70,9 +70,16 @@ const applyObjcPatch = (contents: string) => {
 
 - (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(PKPushType)type withCompletionHandler:(void (^)(void))completion
 {
-    NSString *uuid = [self makeSureUUIDisUUID4:payload.dictionaryPayload[@"uuid"]];
-    NSString *callerName = [NSString stringWithFormat:@"%@ is Calling", payload.dictionaryPayload[@"callerName"]];
-    NSString *handle = payload.dictionaryPayload[@"handle"];
+    NSDictionary *custom = payload.dictionaryPayload[@"custom"];
+    NSDictionary *extra = [custom isKindOfClass:[NSDictionary class]] ? custom[@"a"] : nil;
+    if (![extra isKindOfClass:[NSDictionary class]]) {
+        extra = nil;
+    }
+    NSString *originalUuid = payload.dictionaryPayload[@"uuid"] ?: extra[@"uuid"] ?: [[[NSUUID UUID] UUIDString] lowercaseString];
+    NSString *uuid = [self makeSureUUIDisUUID4:originalUuid];
+    NSString *callerNameRaw = payload.dictionaryPayload[@"callerName"] ?: extra[@"callerName"] ?: @"Unknown";
+    NSString *callerName = [NSString stringWithFormat:@"%@ is Calling", callerNameRaw];
+    NSString *handle = payload.dictionaryPayload[@"handle"] ?: extra[@"handle"] ?: callerNameRaw;
     BOOL isVideo = [payload.dictionaryPayload[@"isVideo"] boolValue];
     BOOL videoVal = NO;
 
@@ -229,11 +236,19 @@ extension ${appDelegateClassName}: PKPushRegistryDelegate {
     for type: PKPushType,
     completion: @escaping () -> Void
   ) {
-    let originalUuid = payload.dictionaryPayload["uuid"] as? String ?? UUID().uuidString.lowercased()
+    // OneSignal puts additional data under custom.a, not at the payload root.
+    let extra = (payload.dictionaryPayload["custom"] as? [AnyHashable: Any])?["a"] as? [AnyHashable: Any]
+    let originalUuid = (payload.dictionaryPayload["uuid"] as? String)
+      ?? (extra?["uuid"] as? String)
+      ?? UUID().uuidString.lowercased()
     let uuid = self.n4comMakeSureUUIDisUUID4(originalUuid)
-    let callerNameRaw = payload.dictionaryPayload["callerName"] as? String ?? "Unknown"
+    let callerNameRaw = (payload.dictionaryPayload["callerName"] as? String)
+      ?? (extra?["callerName"] as? String)
+      ?? "Unknown"
     let callerName = "\\(callerNameRaw) is Calling"
-    let handle = payload.dictionaryPayload["handle"] as? String ?? callerNameRaw
+    let handle = (payload.dictionaryPayload["handle"] as? String)
+      ?? (extra?["handle"] as? String)
+      ?? callerNameRaw
     let isVideo = payload.dictionaryPayload["isVideo"] as? Bool ?? false
 
     self.n4comPerformClassSelector(
