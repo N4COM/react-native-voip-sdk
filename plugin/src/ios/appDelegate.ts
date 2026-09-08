@@ -3,6 +3,7 @@ import { mergeContents } from "@expo/config-plugins/build/utils/generateCode";
 
 const OBJC_TAG = "RNVoipPushNotificationAppDelegate";
 const SWIFT_TAG = "RNVoipPushNotificationAppDelegateSwift";
+const SWIFT_FIELD_TRIALS_TAG = "RNVoipWebRTCFieldTrialsSwift";
 
 const applyObjcPatch = (contents: string) => {
   // method to invoke voip registration
@@ -146,6 +147,12 @@ const ensureSwiftImports = (contents: string) => {
     "import PushKit",
     "import CryptoKit",
     "import ObjectiveC.runtime",
+    // Both are needed by the WebRTC field trials block below. WebRTC supplies
+    // the kRTCFieldTrial* constants and react_native_webrtc supplies
+    // WebRTCModuleOptions; react-native-webrtc is a peer dependency, so both
+    // modules are always present.
+    "import WebRTC",
+    "import react_native_webrtc",
   ].filter((swiftImport) => !contents.includes(swiftImport));
 
   if (!missingImports.length) {
@@ -160,6 +167,70 @@ const ensureSwiftImports = (contents: string) => {
   return contents.replace(
     importBlockMatcher,
     `$1${missingImports.join("\n")}\n`
+  );
+};
+
+const addSwiftWebRTCFieldTrials = (contents: string) => {
+  const fieldTrialsBlock = `// CallKit deactivates the app's audio session to put a call on hold. WebRTC's
+// default interruption-end path then calls UpdateAudioUnit() on a voice
+// processing unit that is still in the started state, so the unit is never
+// rebuilt and the call comes back silent in both directions on unhold: mic
+// capture stops producing samples while inbound RTP keeps arriving unrendered.
+// Forcing a route change (toggling the speaker) is what used to revive it.
+//
+// The WebRTC-Audio-iOS-Holding field trial makes
+// AudioDeviceIOS::HandleInterruptionEnd() stop and uninitialize the audio unit
+// and re-derive its buffers before updating it, so capture and playout actually
+// restart. Stock react-native-webrtc leaves this trial off and only enables the
+// NWPathMonitor one.
+//
+// kRTCFieldTrialUseNWPathMonitor is repeated on purpose: supplying a
+// fieldTrials dictionary replaces WebRTCModule's own default, and dropping it
+// would reintroduce the dual-SIM connectivity bug (crbug.com/webrtc/10966).
+//
+// This has to run before anything touches WebRTC. WebRTCModule reads this
+// singleton in its own -init and calls RTCInitFieldTrialDictionary() there, so
+// it must stay ahead of startReactNative().
+let n4comFieldTrials: [AnyHashable: Any] = [
+  kRTCFieldTrialUseNWPathMonitor: kRTCFieldTrialEnabledValue,
+  "WebRTC-Audio-iOS-Holding": kRTCFieldTrialEnabledValue,
+]
+let n4comWebRTCOptions = WebRTCModuleOptions.sharedInstance()
+n4comWebRTCOptions.fieldTrials = n4comFieldTrials`;
+
+  // Single-line anchors only: mergeContents matches line by line, so a regex
+  // spanning the multi-line didFinishLaunchingWithOptions signature can never
+  // match. offset 0 inserts above the matched line, which is what keeps this
+  // ahead of startReactNative(). Ordered earliest-first; every fallback is
+  // still before React Native (and therefore WebRTCModule) is created.
+  const anchors = [
+    /let\s+delegate\s*=\s*ReactNativeDelegate\s*\(\s*\)/,
+    /bindReactNativeFactory\s*\(/,
+    /factory\.startReactNative\s*\(/,
+  ];
+
+  for (const anchor of anchors) {
+    try {
+      return mergeContents({
+        tag: SWIFT_FIELD_TRIALS_TAG,
+        src: contents,
+        anchor,
+        offset: 0,
+        comment: "// ",
+        newSrc: fieldTrialsBlock,
+      }).contents;
+    } catch (e) {
+      // Anchor absent from this AppDelegate template; try the next one.
+    }
+  }
+
+  // Deliberately fatal rather than silent: inserting this too late is
+  // indistinguishable from not inserting it at all, and the symptom (audio lost
+  // after the first hold) only shows up in manual testing on a device.
+  throw new Error(
+    "react-native-voip-sdk: found no place in AppDelegate.swift to set the " +
+      "WebRTC field trials before React Native starts. Audio is lost when a " +
+      "CallKit call is taken off hold without them."
   );
 };
 
@@ -368,6 +439,7 @@ extension ${appDelegateClassName}: PKPushRegistryDelegate {
 
 const applySwiftPatch = (contents: string) => {
   contents = ensureSwiftImports(contents);
+  contents = addSwiftWebRTCFieldTrials(contents);
   contents = addSwiftDidFinishLaunchInvocation(contents);
   contents = addSwiftPushKitExtension(contents);
   return contents;

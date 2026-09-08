@@ -5,6 +5,7 @@ var config_plugins_1 = require("@expo/config-plugins");
 var generateCode_1 = require("@expo/config-plugins/build/utils/generateCode");
 var OBJC_TAG = "RNVoipPushNotificationAppDelegate";
 var SWIFT_TAG = "RNVoipPushNotificationAppDelegateSwift";
+var SWIFT_FIELD_TRIALS_TAG = "RNVoipWebRTCFieldTrialsSwift";
 var applyObjcPatch = function (contents) {
     // method to invoke voip registration
     // I decided to use this as soon as the app starts to avoid js delay issues
@@ -52,6 +53,12 @@ var ensureSwiftImports = function (contents) {
         "import PushKit",
         "import CryptoKit",
         "import ObjectiveC.runtime",
+        // Both are needed by the WebRTC field trials block below. WebRTC supplies
+        // the kRTCFieldTrial* constants and react_native_webrtc supplies
+        // WebRTCModuleOptions; react-native-webrtc is a peer dependency, so both
+        // modules are always present.
+        "import WebRTC",
+        "import react_native_webrtc",
     ].filter(function (swiftImport) { return !contents.includes(swiftImport); });
     if (!missingImports.length) {
         return contents;
@@ -61,6 +68,41 @@ var ensureSwiftImports = function (contents) {
         return "".concat(missingImports.join("\n"), "\n\n").concat(contents);
     }
     return contents.replace(importBlockMatcher, "$1".concat(missingImports.join("\n"), "\n"));
+};
+var addSwiftWebRTCFieldTrials = function (contents) {
+    var fieldTrialsBlock = "// CallKit deactivates the app's audio session to put a call on hold. WebRTC's\n// default interruption-end path then calls UpdateAudioUnit() on a voice\n// processing unit that is still in the started state, so the unit is never\n// rebuilt and the call comes back silent in both directions on unhold: mic\n// capture stops producing samples while inbound RTP keeps arriving unrendered.\n// Forcing a route change (toggling the speaker) is what used to revive it.\n//\n// The WebRTC-Audio-iOS-Holding field trial makes\n// AudioDeviceIOS::HandleInterruptionEnd() stop and uninitialize the audio unit\n// and re-derive its buffers before updating it, so capture and playout actually\n// restart. Stock react-native-webrtc leaves this trial off and only enables the\n// NWPathMonitor one.\n//\n// kRTCFieldTrialUseNWPathMonitor is repeated on purpose: supplying a\n// fieldTrials dictionary replaces WebRTCModule's own default, and dropping it\n// would reintroduce the dual-SIM connectivity bug (crbug.com/webrtc/10966).\n//\n// This has to run before anything touches WebRTC. WebRTCModule reads this\n// singleton in its own -init and calls RTCInitFieldTrialDictionary() there, so\n// it must stay ahead of startReactNative().\nlet n4comFieldTrials: [AnyHashable: Any] = [\n  kRTCFieldTrialUseNWPathMonitor: kRTCFieldTrialEnabledValue,\n  \"WebRTC-Audio-iOS-Holding\": kRTCFieldTrialEnabledValue,\n]\nlet n4comWebRTCOptions = WebRTCModuleOptions.sharedInstance()\nn4comWebRTCOptions.fieldTrials = n4comFieldTrials";
+    // Single-line anchors only: mergeContents matches line by line, so a regex
+    // spanning the multi-line didFinishLaunchingWithOptions signature can never
+    // match. offset 0 inserts above the matched line, which is what keeps this
+    // ahead of startReactNative(). Ordered earliest-first; every fallback is
+    // still before React Native (and therefore WebRTCModule) is created.
+    var anchors = [
+        /let\s+delegate\s*=\s*ReactNativeDelegate\s*\(\s*\)/,
+        /bindReactNativeFactory\s*\(/,
+        /factory\.startReactNative\s*\(/,
+    ];
+    for (var _i = 0, anchors_1 = anchors; _i < anchors_1.length; _i++) {
+        var anchor = anchors_1[_i];
+        try {
+            return (0, generateCode_1.mergeContents)({
+                tag: SWIFT_FIELD_TRIALS_TAG,
+                src: contents,
+                anchor: anchor,
+                offset: 0,
+                comment: "// ",
+                newSrc: fieldTrialsBlock,
+            }).contents;
+        }
+        catch (e) {
+            // Anchor absent from this AppDelegate template; try the next one.
+        }
+    }
+    // Deliberately fatal rather than silent: inserting this too late is
+    // indistinguishable from not inserting it at all, and the symptom (audio lost
+    // after the first hold) only shows up in manual testing on a device.
+    throw new Error("react-native-voip-sdk: found no place in AppDelegate.swift to set the " +
+        "WebRTC field trials before React Native starts. Audio is lost when a " +
+        "CallKit call is taken off hold without them.");
 };
 var addSwiftDidFinishLaunchInvocation = function (contents) {
     var methodInvocationBlock = "self.n4comRegisterVoipPush()";
@@ -98,6 +140,7 @@ var addSwiftPushKitExtension = function (contents) {
 };
 var applySwiftPatch = function (contents) {
     contents = ensureSwiftImports(contents);
+    contents = addSwiftWebRTCFieldTrials(contents);
     contents = addSwiftDidFinishLaunchInvocation(contents);
     contents = addSwiftPushKitExtension(contents);
     return contents;

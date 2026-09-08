@@ -329,3 +329,22 @@ const Component = () => {
   );
 };
 ```
+
+## Note di implementazione (iOS)
+
+Il config plugin iOS applica una patch a `AppDelegate.swift` per abilitare due
+*field trial* di WebRTC prima dell'avvio di React Native. Senza questa patch
+**l'audio si interrompe in entrambe le direzioni la prima volta che una chiamata
+viene ripresa dopo essere stata messa in attesa** (hold/unhold tramite CallKit).
+
+Due avvertenze per chi lavora sul layer nativo:
+
+- Non modificare direttamente `ios/`: la cartella è generata e viene
+  sovrascritta da `expo prebuild`. Le modifiche vanno nel plugin.
+- Il dizionario `fieldTrials` **sostituisce** il valore predefinito di
+  `react-native-webrtc`, non lo integra. Se si aggiunge un nuovo trial è
+  necessario mantenere anche le chiavi già presenti.
+
+Dettagli tecnici, motivazione della scelta implementativa e note di
+manutenzione: [`docs/ios-webrtc-field-trials.md`](docs/ios-webrtc-field-trials.md)
+(in inglese).
