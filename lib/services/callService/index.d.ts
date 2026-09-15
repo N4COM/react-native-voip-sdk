@@ -104,7 +104,7 @@ declare class CallService extends EventEmitter {
     changeAudioRoute(output: string, callUUID?: string): void;
     resetIncomingCallProps(): void;
     callCleanUp(): void;
-    holdOtherCalls(sessionId: string): void;
+    holdOtherCalls(sessionId?: string): void;
     getAudioRoutes(): Promise<void>;
     setAudioRoute(route: string): Promise<void>;
     updateCallInfo(callUUID: string, info: string): void;

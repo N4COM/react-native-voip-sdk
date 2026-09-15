@@ -35,7 +35,7 @@ declare class NativePhone {
         reason?: number;
     }): void;
     onNativeCallDisplay(event: any): void;
-    setEstablishedCall(callUUID: string): void;
+    setEstablishedCall(callUUID: string, callDirection: 'incoming' | 'outgoing'): void;
     showIncomingCall(callUUID: string, handle: string, name: string): void;
     reportCallEnded(callUUID: string, cause: string, originator: string): void;
     androidEndCallHandler(payload: any): void;

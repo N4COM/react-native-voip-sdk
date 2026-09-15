@@ -8869,6 +8869,11 @@ react-native-background-timer@^2.4.1:
   version "4.3.16-n4com.1"
   resolved "https://github.com/N4COM/react-native-callkeep.git#815563a3040f953e23a932d328d03de09e81b947"
 
+react-native-incall-manager@^4.2.2:
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/react-native-incall-manager/-/react-native-incall-manager-4.3.0.tgz#67c3402bd9f4ea3f7139d854af9f18cea784a62a"
+  integrity sha512-T9TayjZH0n8kVX0KMaVCRethCJWgWC83xL8elVUV54Ue0BpFh5B8YvQUsn8p0Kxoh5zYz+MCOD9/6RrFpC+IRg==
+
 "react-native-incoming-call@https://github.com/N4COM/react-native-incoming-call.git#v2.0.3-n4com.1":
   version "2.0.3-n4com.1"
   resolved "https://github.com/N4COM/react-native-incoming-call.git#b4af958bff3390b23719343b95abeeccb1bb1788"
