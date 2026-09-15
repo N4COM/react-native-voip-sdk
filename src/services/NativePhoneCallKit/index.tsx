@@ -4,7 +4,7 @@ import { CallServiceType } from "../callService";
 import uuid from 'react-native-uuid';
 import promptsInstance from "../../prompts";
 import AndroidCallBridge from "../AndroidNativeCallBridge";
-// import InCallManager from 'react-native-incall-manager';
+import InCallManager from 'react-native-incall-manager';
 // import { DeviceEventEmitter } from 'react-native';
 
 const getNewUuid = () => uuid.v4().toString().toLowerCase();
@@ -312,6 +312,14 @@ class NativePhone{
         this.callService.sendDTMF(obj.digits,obj.callUUID);
     }
 
+    // KNOWN ISSUE (manualTest item 9, iOS): a route the user picks can be taken
+    // back ~1s later with reason 1 NewDeviceAvailable. This is Apple's AirPods
+    // automatic switching (audioaccessoryd "Hijack v2") pulling the AirPods off
+    // a second Apple device, triggered when the WebRTC audio engine restarts for
+    // the new sample rate. It needs another signed-in device nearby with
+    // Bluetooth on; with that device's Bluetooth off it does not happen at all.
+    // Re-asserting the route once defeats it (the hijack asks once and then sits
+    // on a cool-off), but that fix is on hold pending customer reports.
     onNativeCallAudioRoute(obj:{output:string, callUUID?:string,handle?:string,reason?:number}){
         this.callService.changeAudioRoute(obj.output,obj?.callUUID);
       }
@@ -322,12 +330,25 @@ class NativePhone{
         this.callService.emitSdkEvent('callScreenDisplayed',{callUUID:event.callUUID, handle:event.handle, name:event.localizedCallerName});
     }  
 
-    setEstablishedCall(callUUID:string){
+    // callDirection comes from the call site, not the store: onSipCallAccepted
+    // is the outgoing-only path and onSipCallConfirmed the incoming-only one
+    // (both guard on originator==='local'), so each already knows which it is.
+    setEstablishedCall(callUUID:string, callDirection:'incoming'|'outgoing'){
         if (!callUUID) {
             return;
         }
+
+        // Android: setActive() - needed for both directions. No-op on iOS.
         RNCallKeep.setCurrentCallActive(callUUID);
-        RNCallKeep.reportConnectedOutgoingCallWithUUID(callUUID);
+
+        // iOS: reportOutgoingCall(connectedAt:), an outgoing-only CallKit API.
+        // No-op on Android. An incoming call is already connected as far as
+        // CallKit is concerned once the CXAnswerCallAction is fulfilled, so
+        // reporting it here would be telling iOS something untrue about a call
+        // it created via reportNewIncomingCall.
+        if (callDirection==='outgoing') {
+            RNCallKeep.reportConnectedOutgoingCallWithUUID(callUUID);
+        }
     }
 
     showIncomingCall(callUUID:string, handle:string, name:string){
@@ -372,17 +393,18 @@ class NativePhone{
     }
 
     startInCallManager(){
-        // console.log('====================================');
-        // console.log('starting incall manager');
-        // console.log('====================================');
-        // InCallManager.start({media: 'audio'}); 
+        // Keeps AVAudioSession pinned to one category/mode/sample-rate for the
+        // life of the call. Without it the WebRTC ADM renegotiates the session
+        // whenever the hardware rate changes (e.g. 24 kHz Bluetooth HFP ->
+        // 48 kHz built-in speaker), and the implicit setCategory that comes with
+        // that rebuild clears the transient overrideOutputAudioPort flag - so a
+        // switch to Speaker is silently reverted a moment later.
+        // See manualTest item 9.
+        InCallManager.start({media: 'audio'});
     }
 
     stopInCallManager(){
-        // console.log('====================================');
-        // console.log('stopping incall manager');
-        // console.log('====================================');
-        // InCallManager.stop();
+        InCallManager.stop();
     }
     
     async setAudioRoute(route:string,uuid:string){

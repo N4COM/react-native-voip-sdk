@@ -476,7 +476,11 @@ class CallService extends EventEmitter{
         const call=this.callStore.getCallBySessionId(session.ack.call_id);
         this.callStore.startCallTimer(session.ack.call_id)
         this.callStore.updateCallStatusBySessionId(session.ack.call_id,'established')   
-        this.nativePhone?.setEstablishedCall(call?.callUUID||'')
+        // Only incoming calls reach here: 'confirmed' fires with
+        // originator==='remote' when the remote ACKs a call we answered, and
+        // with 'local' when we ACK an outgoing 200 - which the guard above
+        // returns on.
+        this.nativePhone?.setEstablishedCall(call?.callUUID||'','incoming')
         this.callConnectingUUID=undefined
         this.holdOtherCalls(session.ack.call_id)
         this.emit('callUpdated',call)
@@ -497,7 +501,10 @@ class CallService extends EventEmitter{
         this.callStore.startCallTimer(sessionEvent.response.call_id)
         this.callStore.updateCallStatusBySessionId(sessionEvent.response.call_id,'established')
         this.callConnectingUUID=undefined
-        this.nativePhone?.setEstablishedCall(call?.callUUID || '')
+        // Only outgoing calls reach here: 'accepted' fires with
+        // originator==='remote' on the remote's 200, and with 'local' when we
+        // answer an incoming call - which the guard above returns on.
+        this.nativePhone?.setEstablishedCall(call?.callUUID || '','outgoing')
         this.holdOtherCalls(sessionEvent.response.call_id)
         this.emit('callUpdated',call)
     }
@@ -612,9 +619,30 @@ class CallService extends EventEmitter{
             this.extraCallData=null;
         }
 
+        // Hold the calls we already have *before* dialing the new one, so at
+        // most one call is ever unheld.
+        //
+        // Android has been getting this implicitly: starting a second
+        // connection makes Telecom call VoiceConnection.onHold() on the first.
+        // CallKit has no equivalent, so on iOS both calls stayed unheld all the
+        // way through ringing, and the moment the second one was reported
+        // connected callservicesd saw two simultaneously connected, unheld
+        // calls and committed its own CXEndCallAction to kill one of them.
+        //
+        // Doing it explicitly on both platforms rather than leaning on
+        // Telecom: same code path everywhere, and the intent is stated instead
+        // of inherited. Safe to repeat - RTCSession.hold() returns early when
+        // the session is already held, and Telecom only asks for a state change
+        // it hasn't got.
+        //
+        // The new call is not in the store yet (its session is created from
+        // the native startCall action), so holdOtherCalls() with no session id
+        // holds everything currently present. holdOtherCalls() runs again when
+        // the new call establishes, so this only moves the hold earlier.
+        this.holdOtherCalls()
 
         this.nativePhone?.startCall(callUUID,handle,name? name:handle)
-    
+
     }
 
 
@@ -834,8 +862,12 @@ class CallService extends EventEmitter{
         }
     }
 
-    holdOtherCalls(sessionId:string){
+    // sessionId omitted = hold every call in the store (used at dial time,
+    // before the new call's session exists).
+    holdOtherCalls(sessionId?:string){
         const calls= this.callStore.getAllCalls();
+        if (!calls.length) return
+
         calls.forEach((call)=>{
             if (call.sessionId!==sessionId&& !call.isHeld ) {
                 this.nativePhone?.holdCall(call.callUUID,true)
