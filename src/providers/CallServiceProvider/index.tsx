@@ -2,7 +2,7 @@ import React, { createContext,useContext,useEffect, useReducer, useState } from 
 import { Call, PendingCall } from "../../services/callService";
 import callService from "../../services/callService";
 import BackgroundTimer from 'react-native-background-timer';
-import { Alert } from "react-native";
+import { Alert, AppState } from "react-native";
 import promptsInstance, { PromptsType } from "../../prompts";
 import { VoipSdkConfig } from "../../types/config";
 
@@ -153,22 +153,55 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
             setCallServiceSipInitFailed(true);
        });
 
-       callService.addListener('callFailed', () => {
+       // A call can fail while the app is not in the foreground: the
+       // pending-call timeout is armed with BackgroundTimer precisely so it
+       // still fires there. Presenting an Alert in that state strands it. On
+       // iOS RCTAlertController puts the alert in a UIWindow of its own at
+       // UIWindowLevelAlert+1 and makes it key, and that window is released
+       // only from a button's action handler. An alert nobody is there to
+       // dismiss is therefore a window that is never released: it sits above
+       // the app at alert level with a bare root view controller, and the
+       // status bar - which iOS lays out from the topmost window - is left
+       // with chrome that does not belong to the app.
+       //
+       // So hold the notice while we are away and raise it on the next
+       // foreground, where the user can actually dismiss it.
+       let deferredFailure: string | undefined;
+
+       const presentCallFailedAlert = (which: string) => {
             const prompts=promptsInstance.getPrompts()
             Alert.alert(prompts.callFailed.title, prompts.callFailed.body, [
                 {text: prompts.callFailed.buttons.ok, onPress: () => {
-                    console.log("Call Failed button pressed");
+                    console.log(`${which} button pressed`);
                 }},
              ]);
+       };
+
+       const reportCallFailed = (which: string) => {
+            // 'inactive' counts as away: the alert window is stranded just the
+            // same when the app is mid-transition or behind the CallKit UI.
+            if (AppState.currentState === 'active') {
+                presentCallFailedAlert(which)
+                return
+            }
+            // Both events raise the same alert, so several failures while we
+            // are away coalesce into the one notice shown on return.
+            deferredFailure = which
+       };
+
+       const appStateSubscription = AppState.addEventListener('change', (next) => {
+            if (next !== 'active' || deferredFailure === undefined) return
+            const which = deferredFailure
+            deferredFailure = undefined
+            presentCallFailedAlert(which)
+       });
+
+       callService.addListener('callFailed', () => {
+            reportCallFailed('Call Failed')
        });
 
        callService.addListener('outgoingCallFailed', () => {
-            const prompts=promptsInstance.getPrompts()
-             Alert.alert(prompts.callFailed.title, prompts.callFailed.body, [
-                {text: prompts.callFailed.buttons.ok, onPress: () => {
-                    console.log("Outgoing Call Failed button pressed");
-                }},
-             ]);
+            reportCallFailed('Outgoing Call Failed')
        });
 
         return () => {
@@ -178,6 +211,8 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
           callService.removeAllListeners('callPending'); 
           callService.removeAllListeners('sipServiceFailed'); 
           callService.removeAllListeners('callFailed');  
+          callService.removeAllListeners('outgoingCallFailed');
+          appStateSubscription.remove();
         }
     
       }, [])
