@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SipCredentials } from '../types/config';
+import { SipCredentials, SipOptions } from '../types/config';
 
 export type SipSession = {
     credentials: SipCredentials;
     contactParams: Record<string, string>;
+    sipOptions: SipOptions;
 };
 
 const SIP_SESSION_STORAGE_KEY = '@voip-sdk/sipSession';
@@ -30,6 +31,7 @@ export async function loadSipSession(): Promise<SipSession | undefined> {
         return {
             credentials: session.credentials,
             contactParams: session.contactParams ?? {},
+            sipOptions: session.sipOptions ?? {},
         };
     } catch (error) {
         console.log('loadSipSession error', error);

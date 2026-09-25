@@ -9,5 +9,6 @@ export type {
     SipCredentials,
     PushTokenInfo,
     SdkEvent,
+    SipOptions,
     VoipSdkConfig,
 } from "./types/config";

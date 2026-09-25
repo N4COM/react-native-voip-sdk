@@ -217,6 +217,7 @@ class CallService extends EventEmitter{
             const session = {
                 credentials,
                 contactParams: this.sdkConfig.sipContactParams?.() ?? {},
+                sipOptions: this.sdkConfig.sipOptions ?? {},
             };
             await saveSipSession(session);
             return session;

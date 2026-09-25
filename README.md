@@ -81,6 +81,10 @@ const config: VoipSdkConfig = {
     'pn-tok': myCredentials.ownerId ?? '',
     'pn-type': 'my-backend',
   }),
+  sipOptions: {
+    userAgent: 'MyApp 1.0.0',
+    noAnswerTimeout: 180,
+  },
   onSdkEvent: ({ name, properties }) => {
     // Inoltra a analytics, log, o ignora.
     console.log(name, properties);
@@ -89,6 +93,8 @@ const config: VoipSdkConfig = {
 
 await callService.startCallService(config);
 ```
+
+`sipOptions` è opzionale: `userAgent` imposta l'header SIP User-Agent e `noAnswerTimeout` i secondi dopo i quali una chiamata in arrivo non risposta viene rifiutata. Se omessi si usano i default di JsSIP (`noAnswerTimeout` = 60). Come `sipContactParams`, vengono salvati insieme alle credenziali così da valere anche quando l'app viene risvegliata da una push.
 
 `onSdkEvent` è opzionale. L'SDK lo chiama per eventi di ciclo di vita (registrazione SIP, schermata chiamata, answer/end, …). Eventi emessi prima di `startCallService()` (avvio a freddo Android, UI nativa iOS) non vengono consegnati.
 
