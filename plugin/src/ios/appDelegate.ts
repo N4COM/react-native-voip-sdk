@@ -4,6 +4,8 @@ import { mergeContents } from "@expo/config-plugins/build/utils/generateCode";
 const OBJC_TAG = "RNVoipPushNotificationAppDelegate";
 const SWIFT_TAG = "RNVoipPushNotificationAppDelegateSwift";
 const SWIFT_FIELD_TRIALS_TAG = "RNVoipWebRTCFieldTrialsSwift";
+const OBJC_USER_ACTIVITY_TAG = "RNCallKeepContinueUserActivity";
+const SWIFT_USER_ACTIVITY_TAG = "RNCallKeepContinueUserActivitySwift";
 
 const applyObjcPatch = (contents: string) => {
   // method to invoke voip registration
@@ -139,7 +141,42 @@ const applyObjcPatch = (contents: string) => {
     );
   }
 
+  contents = addObjcContinueUserActivity(contents);
+
   return contents;
+};
+
+// Tapping an app entry in the iOS Recents list relaunches the app with an
+// INStartCallIntent user activity. RNCallKeep turns it into
+// didReceiveStartCallAction, which is what places the call from JS.
+const addObjcContinueUserActivity = (contents: string) => {
+  const forwardBlock = `if ([RNCallKeep application:application continueUserActivity:userActivity restorationHandler:restorationHandler]) {
+    return YES;
+  }`;
+
+  if (/\[RNCallKeep\s+application:/.test(contents)) {
+    return contents;
+  }
+
+  // Expo templates already override continueUserActivity for universal links.
+  if (contents.includes("continueUserActivity:")) {
+    return mergeContents({
+      tag: OBJC_USER_ACTIVITY_TAG,
+      src: contents,
+      anchor: /\[RCTLinkingManager\s+application:\s*application\s+continueUserActivity:/,
+      offset: 0,
+      comment: "// ",
+      newSrc: forwardBlock,
+    }).contents;
+  }
+
+  const lastEnd = contents.lastIndexOf("@end");
+  return `${contents.slice(0, lastEnd)}- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray<id<UIUserActivityRestoring>> * _Nullable))restorationHandler
+{
+  return [RNCallKeep application:application continueUserActivity:userActivity restorationHandler:restorationHandler];
+}
+
+${contents.slice(lastEnd)}`;
 };
 
 const ensureSwiftImports = (contents: string) => {
@@ -258,6 +295,36 @@ const addSwiftDidFinishLaunchInvocation = (contents: string) => {
       comment: "// ",
       newSrc: methodInvocationBlock,
     }).contents;
+  }
+};
+
+// Tapping an app entry in the iOS Recents list relaunches the app with an
+// INStartCallIntent user activity. RNCallKeep turns it into
+// didReceiveStartCallAction, which is what places the call from JS. The Expo
+// template's universal-links override only hands the activity to
+// RCTLinkingManager and super, neither of which knows about CallKit intents.
+const addSwiftContinueUserActivity = (contents: string) => {
+  const forwardBlock = `if self.n4comCallKeepContinueUserActivity(application, userActivity: userActivity, restorationHandler: restorationHandler) {
+  return true
+}`;
+
+  try {
+    return mergeContents({
+      tag: SWIFT_USER_ACTIVITY_TAG,
+      src: contents,
+      anchor: /RCTLinkingManager\.application\(\s*application,\s*continue:\s*userActivity/,
+      offset: 0,
+      comment: "// ",
+      newSrc: forwardBlock,
+    }).contents;
+  } catch (e) {
+    // Fatal for the same reason as the field trials: without it, calling back
+    // from Recents silently does nothing and only shows up on a device.
+    throw new Error(
+      "react-native-voip-sdk: found no continue userActivity override in " +
+        "AppDelegate.swift to forward to RNCallKeep. Calls started from the " +
+        "iOS Recents list will not be placed without it."
+    );
   }
 };
 
@@ -415,6 +482,36 @@ extension ${appDelegateClassName}: PKPushRegistryDelegate {
     )
   }
 
+  func n4comCallKeepContinueUserActivity(
+    _ application: UIApplication,
+    userActivity: NSUserActivity,
+    restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+  ) -> Bool {
+    let selector = NSSelectorFromString("application:continueUserActivity:restorationHandler:")
+
+    guard
+      let callKeepClass: AnyClass = NSClassFromString("RNCallKeep"),
+      let method = class_getClassMethod(callKeepClass, selector)
+    else {
+      return false
+    }
+
+    typealias ContinueUserActivityFunction = @convention(c) (
+      AnyClass,
+      Selector,
+      UIApplication,
+      NSUserActivity,
+      @convention(block) ([Any]?) -> Void
+    ) -> Bool
+
+    let implementation = method_getImplementation(method)
+    let function = unsafeBitCast(implementation, to: ContinueUserActivityFunction.self)
+
+    return function(callKeepClass, selector, application, userActivity) { objects in
+      restorationHandler(objects as? [UIUserActivityRestoring])
+    }
+  }
+
   private func n4comMakeSureUUIDisUUID4(_ value: String) -> String {
     if value.count == 32 {
       return value.lowercased()
@@ -441,6 +538,7 @@ const applySwiftPatch = (contents: string) => {
   contents = ensureSwiftImports(contents);
   contents = addSwiftWebRTCFieldTrials(contents);
   contents = addSwiftDidFinishLaunchInvocation(contents);
+  contents = addSwiftContinueUserActivity(contents);
   contents = addSwiftPushKitExtension(contents);
   return contents;
 };
