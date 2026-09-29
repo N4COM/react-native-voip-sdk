@@ -275,7 +275,7 @@ class NativePhone{
                   break;
             
               case 'RNCallKeepDidReceiveStartCallAction':
-                  this.callService.preLaunchStartCall(element.data.handle,element.data.callUUID,element.data.name);
+                  this.onNativeCallStart(element.data);
                   break;
 
               default:
