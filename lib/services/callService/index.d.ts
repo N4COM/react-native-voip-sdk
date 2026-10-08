@@ -29,9 +29,22 @@ export interface PendingCall {
     handle: string;
     name: string;
     isAnswered: boolean;
+    callDirection: 'incoming' | 'outgoing';
 }
 export type CallServiceType = typeof callServiceInstance;
 export type CallStatus = 'connecting' | 'ringing' | 'established' | 'ended' | 'peerConnection';
+export type SipState = 'idle' | 'connecting' | 'registered' | 'disconnected' | 'failed';
+export type SipFailReason = 'NO_CREDENTIALS' | 'AUTH_FAILED' | 'SERVER_UNREACHABLE' | 'UNKNOWN';
+export type SipStatus = {
+    state: SipState;
+    reason?: SipFailReason;
+    detail?: string;
+};
+export type CallErrorCode = 'SIP_NOT_READY' | 'INCOMING_TIMEOUT' | 'INVALID_NUMBER' | 'MIC_PERMISSION_DENIED' | 'UNKNOWN';
+export type CallError = {
+    code: CallErrorCode;
+    sipStatus?: SipStatus;
+};
 declare class CallService extends EventEmitter {
     canCall: boolean;
     private nativePhone;
@@ -45,7 +58,9 @@ declare class CallService extends EventEmitter {
     private pendingOutgoingCallTimeout;
     private focusedCallUUID;
     appState: AppStateStatus;
+    private requestingMicPermission;
     sipServiceInitFailed: boolean;
+    sipStatus: SipStatus;
     private sdkConfig?;
     private sipSession?;
     callServiceDeviceId: string | undefined;
@@ -60,7 +75,9 @@ declare class CallService extends EventEmitter {
     constructor();
     setSdkStrings(prompts: PromptsType): void;
     getAudioRecordPermission(): Promise<unknown>;
-    start(config: VoipSdkConfig): Promise<false | undefined>;
+    hasMicPermission(): Promise<boolean>;
+    requestMicPermission(): Promise<boolean>;
+    start(config: VoipSdkConfig): Promise<void>;
     getSdkConfig(): VoipSdkConfig | undefined;
     getSipSession(): Promise<SipSession | undefined>;
     private readSipSessionFromHost;
@@ -70,11 +87,15 @@ declare class CallService extends EventEmitter {
     stopCallService(): void;
     removeSipCredentials(): void;
     setCallServiceDeviceId(deviceId: string): void;
+    setSipStatus(status: SipStatus): void;
+    private clearPendingOutgoingCall;
+    private failPendingOutgoingCall;
+    emitCallError(error: CallError): void;
     callScreenDisplayed(callUUID: string, handle: string, name: string): void;
     private clearPendingCallTimeout;
     private armPendingCallTimeout;
     onSipClientReady(): void;
-    onSipClientFailed(): void;
+    onSipClientFailed(reason: SipFailReason, detail?: string): void;
     makeSureUUIDisUUID4(uuid: string): string;
     onIncomingSipCall(sessionEvent: any): void;
     onSipCallFailed(sessionEvent: any): void;
@@ -86,8 +107,12 @@ declare class CallService extends EventEmitter {
     onSipLocalSessionCreated(): void;
     startedCall(handle: string, callUUID: string, name?: string): void;
     checkIfStringHandle(handle: string): boolean;
+    canStartCall(): boolean;
+    canAddCall(): boolean;
+    startCall(handle: string, name?: string, calldata?: string): Promise<void>;
+    addCall(handle: string, name?: string, calldata?: string): void;
     makeCall(handle: string, name?: string, calldata?: string): void;
-    answeredCall(callUUID: string): void;
+    answeredCall(callUUID: string): Promise<void>;
     terminateCall(): void;
     endCallByUUID(callUUID: string): void;
     preLaunchAnswerCall(callUUID: string): void;

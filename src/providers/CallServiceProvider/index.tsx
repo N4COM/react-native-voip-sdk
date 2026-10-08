@@ -1,15 +1,15 @@
-import React, { createContext,useContext,useEffect, useReducer, useState } from "react";
-import { Call, PendingCall } from "../../services/callService";
+import React, { createContext,useCallback,useContext,useEffect, useReducer, useState } from "react";
+import { Call, CallError, PendingCall, SipStatus } from "../../services/callService";
 import callService from "../../services/callService";
 import BackgroundTimer from 'react-native-background-timer';
-import { Alert, AppState } from "react-native";
-import promptsInstance, { PromptsType } from "../../prompts";
+import { PromptsType } from "../../prompts";
 import { VoipSdkConfig } from "../../types/config";
 
 
 export type TransferType='blind'|'attended';
 interface CallServiceContext{
     startCall:(handle:string,name?:string, calldata?:string)=>void;
+    addCall:(handle:string,name?:string, calldata?:string)=>void;
     endCall:()=>void;
     holdCall:()=>void;
     swapCall:()=>void;
@@ -23,6 +23,8 @@ interface CallServiceContext{
     setAudioRoute:(audioRoute:string)=>Promise<void>;
     getAudioRoutes:()=>Promise<void>;
     callServiceSipInitFailed:boolean;
+    sipStatus:SipStatus;
+    addCallErrorListener:(listener:(error:CallError)=>void)=>()=>void;
     startCallService:(config:VoipSdkConfig)=>Promise<boolean|void>;
     setSdkStrings:(prompts:PromptsType)=>void;
 }
@@ -63,11 +65,16 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
     const [callState,callDispatch] = useReducer(callStore, callService.callStore.getAllCalls());
     const [pendingCall, setPendingCall] = useState<PendingCall| Call | undefined>();
     const [callServiceSipInitFailed, setCallServiceSipInitFailed] = useState<boolean>(callService.sipServiceInitFailed);
+    const [sipStatus, setSipStatus] = useState<SipStatus>(callService.sipStatus);
 
   
     
     const startCall=(handle:string,name?:string, calldata?:string)=>{        
-        callService.makeCall(handle,name,calldata);
+        void callService.startCall(handle,name,calldata);
+    }
+
+    const addCall=(handle:string,name?:string, calldata?:string)=>{
+        callService.addCall(handle,name,calldata);
     }
 
     const endCall=()=>{
@@ -121,6 +128,15 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
         callService.setSdkStrings(prompts);
     }
 
+    // Stable across renders: the context object is rebuilt on every render,
+    // and a new function each time would make subscribers resubscribe.
+    const addCallErrorListener=useCallback((listener:(error:CallError)=>void)=>{
+        callService.addListener('callError',listener);
+        return ()=>{
+            callService.removeListener('callError',listener);
+        };
+    },[]);
+
 
     useEffect(() => {
 
@@ -153,55 +169,8 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
             setCallServiceSipInitFailed(true);
        });
 
-       // A call can fail while the app is not in the foreground: the
-       // pending-call timeout is armed with BackgroundTimer precisely so it
-       // still fires there. Presenting an Alert in that state strands it. On
-       // iOS RCTAlertController puts the alert in a UIWindow of its own at
-       // UIWindowLevelAlert+1 and makes it key, and that window is released
-       // only from a button's action handler. An alert nobody is there to
-       // dismiss is therefore a window that is never released: it sits above
-       // the app at alert level with a bare root view controller, and the
-       // status bar - which iOS lays out from the topmost window - is left
-       // with chrome that does not belong to the app.
-       //
-       // So hold the notice while we are away and raise it on the next
-       // foreground, where the user can actually dismiss it.
-       let deferredFailure: string | undefined;
-
-       const presentCallFailedAlert = (which: string) => {
-            const prompts=promptsInstance.getPrompts()
-            Alert.alert(prompts.callFailed.title, prompts.callFailed.body, [
-                {text: prompts.callFailed.buttons.ok, onPress: () => {
-                    console.log(`${which} button pressed`);
-                }},
-             ]);
-       };
-
-       const reportCallFailed = (which: string) => {
-            // 'inactive' counts as away: the alert window is stranded just the
-            // same when the app is mid-transition or behind the CallKit UI.
-            if (AppState.currentState === 'active') {
-                presentCallFailedAlert(which)
-                return
-            }
-            // Both events raise the same alert, so several failures while we
-            // are away coalesce into the one notice shown on return.
-            deferredFailure = which
-       };
-
-       const appStateSubscription = AppState.addEventListener('change', (next) => {
-            if (next !== 'active' || deferredFailure === undefined) return
-            const which = deferredFailure
-            deferredFailure = undefined
-            presentCallFailedAlert(which)
-       });
-
-       callService.addListener('callFailed', () => {
-            reportCallFailed('Call Failed')
-       });
-
-       callService.addListener('outgoingCallFailed', () => {
-            reportCallFailed('Outgoing Call Failed')
+       callService.addListener('sipStatusChanged', (status:SipStatus) => {
+            setSipStatus(status);
        });
 
         return () => {
@@ -210,9 +179,7 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
           callService.removeAllListeners('callUpdated');
           callService.removeAllListeners('callPending'); 
           callService.removeAllListeners('sipServiceFailed'); 
-          callService.removeAllListeners('callFailed');  
-          callService.removeAllListeners('outgoingCallFailed');
-          appStateSubscription.remove();
+          callService.removeAllListeners('sipStatusChanged');
         }
     
       }, [])
@@ -222,10 +189,10 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
 
     return (
         <CallServiceContext.Provider value={{
-            startCall,endCall,holdCall,swapCall,toggleMuteCall
+            startCall,addCall,endCall,holdCall,swapCall,toggleMuteCall
             ,attendedTransferCall,blindTransferCall,sendDTMF,
             setAudioRoute,getAudioRoutes,pendingCall,
-            callState,callServiceSipInitFailed,startCallService,stopCallService,setSdkStrings}}>
+            callState,callServiceSipInitFailed,sipStatus,addCallErrorListener,startCallService,stopCallService,setSdkStrings}}>
             {children}
         </CallServiceContext.Provider>
     )

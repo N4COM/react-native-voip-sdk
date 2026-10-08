@@ -1,7 +1,8 @@
 import BackgroundTimer from 'react-native-background-timer';
 import SoftPhone from "../../classes/softPhone";
-import { Call, CallServiceType } from "../callService";
+import { Call, CallServiceType, SipFailReason } from "../callService";
 import { SipCredentials } from "../../types/config";
+import JsSIP from 'jssip';
 
 const callOptions:any={
     'mediaConstraints' : { 'audio': true, 'video': false},
@@ -17,6 +18,19 @@ const callOptions:any={
 
 function sipCallId(session:any, request?:any):string|undefined {
     return request?.call_id ?? session?._request?.call_id;
+}
+
+function registrationFailedReason(cause:string):SipFailReason{
+    switch (cause) {
+        case JsSIP.C.causes.AUTHENTICATION_ERROR:
+        case JsSIP.C.causes.REJECTED:
+            return 'AUTH_FAILED';
+        case JsSIP.C.causes.CONNECTION_ERROR:
+        case JsSIP.C.causes.REQUEST_TIMEOUT:
+            return 'SERVER_UNREACHABLE';
+        default:
+            return 'UNKNOWN';
+    }
 }
 
 
@@ -61,7 +75,7 @@ class SipClient {
             console.log('credentials not found');
             console.log('====================================');
             this.callService.emitSdkEvent('registerClientFailed');
-            this.callService.onSipClientFailed();
+            this.callService.onSipClientFailed('NO_CREDENTIALS');
             return          
         }
         const {credentials, contactParams, sipOptions}= session;
@@ -105,8 +119,9 @@ class SipClient {
 
     registerEventsListeners(){
         
+        this.sipUA.on('connecting', (e:any)=>{this.callService.setSipStatus({state:'connecting'})});
         this.sipUA.on('connected', (e:any)=>console.log('connected'));
-        this.sipUA.on('disconnected', (e:any)=>console.log('disconnected'));
+        this.sipUA.on('disconnected', (e:any)=>{this.handleDisconnected(e)});
         this.sipUA.on('registered', (e:any)=>{this.handleRegistration(e)});
         this.sipUA.on('unregistered', (e:any)=>{this.handleUnRegistration(e)});
         this.sipUA.on('registrationFailed', (e:any)=>{this.handleRegistrationFailed(e)});
@@ -115,10 +130,12 @@ class SipClient {
 
     destroy(){
         this.sipUA && this.sipUA.stop();
+        this.callService.setSipStatus({state:'idle'});
     }
 
     removeCredentials(){
         this.configurationParams=undefined;
+        this.sipUA && this.sipUA.removeAllListeners();
         this.sipUA=undefined;
 
     }
@@ -132,17 +149,28 @@ class SipClient {
 
     handleRegistrationFailed(e:any){
         this.isRegistered=false;
-        this.callService.emitSdkEvent('sipClientRegistrationFailed');
-        this.callService.onSipClientFailed();
+        const detail=e.response ? `${e.response.status_code} ${e.response.reason_phrase}` : e.cause;
+        this.callService.emitSdkEvent('sipClientRegistrationFailed',{cause:e.cause, detail});
+        this.callService.onSipClientFailed(registrationFailedReason(e.cause), detail);
     }
 
     handleUnRegistration(e:any){
         // some logic here
         this.isRegistered=false;
         this.callService.canCall=false;
+        if (this.sipUA.status !== 2 /* STATUS_USER_CLOSED */) {
+            this.callService.setSipStatus({state:'disconnected'});
+        }
         this.callService.emitSdkEvent('sipClientUnregistered');
 
         
+    }
+
+    handleDisconnected(e:any){
+        console.log('disconnected');
+        if (this.sipUA.status !== 2 /* STATUS_USER_CLOSED */) {
+            this.callService.setSipStatus({state:'disconnected'});
+        }
     }
 
     handleNewRTCSession(sessionEvent:any){

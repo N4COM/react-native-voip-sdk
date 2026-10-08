@@ -1,10 +1,11 @@
 import React from "react";
-import { Call, PendingCall } from "../../services/callService";
+import { Call, CallError, PendingCall, SipStatus } from "../../services/callService";
 import { PromptsType } from "../../prompts";
 import { VoipSdkConfig } from "../../types/config";
 export type TransferType = 'blind' | 'attended';
 interface CallServiceContext {
     startCall: (handle: string, name?: string, calldata?: string) => void;
+    addCall: (handle: string, name?: string, calldata?: string) => void;
     endCall: () => void;
     holdCall: () => void;
     swapCall: () => void;
@@ -18,6 +19,8 @@ interface CallServiceContext {
     setAudioRoute: (audioRoute: string) => Promise<void>;
     getAudioRoutes: () => Promise<void>;
     callServiceSipInitFailed: boolean;
+    sipStatus: SipStatus;
+    addCallErrorListener: (listener: (error: CallError) => void) => () => void;
     startCallService: (config: VoipSdkConfig) => Promise<boolean | void>;
     setSdkStrings: (prompts: PromptsType) => void;
 }

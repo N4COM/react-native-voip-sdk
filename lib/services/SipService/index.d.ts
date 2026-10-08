@@ -17,6 +17,7 @@ declare class SipClient {
     handleRegistration(e: any): void;
     handleRegistrationFailed(e: any): void;
     handleUnRegistration(e: any): void;
+    handleDisconnected(e: any): void;
     handleNewRTCSession(sessionEvent: any): void;
     registerRTCSessionListeners(session: any): void;
     handleFailedRTCSession(e: any): void;

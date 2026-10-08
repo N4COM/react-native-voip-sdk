@@ -5,6 +5,7 @@ import CallStore from "./callStore";
 import uuid from 'react-native-uuid';
 import {Alert, AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
 import BackgroundTimer from 'react-native-background-timer';
+import { permissions } from 'react-native-webrtc';
 import {EventEmitter} from 'eventemitter3';
 import { PromptsType } from '../../prompts';
 import {VoipSdkConfig} from '../../types/config';
@@ -67,22 +68,35 @@ export interface Call{
     endReason?:string
 }
 
-interface PendingOutgoingCall{
-    callUUID:string
-    handle:string
-    name:string
-}
 export interface PendingCall{
     callUUID:string
     handle:string
     name:string,
     isAnswered:boolean
+    callDirection:'incoming'|'outgoing'
 }
 
 
 export type CallServiceType= typeof callServiceInstance
 
 export type CallStatus='connecting'|'ringing'|'established'|'ended'|'peerConnection'
+
+export type SipState='idle'|'connecting'|'registered'|'disconnected'|'failed'
+
+export type SipFailReason='NO_CREDENTIALS'|'AUTH_FAILED'|'SERVER_UNREACHABLE'|'UNKNOWN'
+
+export type SipStatus={
+    state:SipState
+    reason?:SipFailReason   // only when state is 'failed'
+    detail?:string          // server response, e.g. '403 Forbidden' - for logs/support
+}
+
+export type CallErrorCode='SIP_NOT_READY'|'INCOMING_TIMEOUT'|'INVALID_NUMBER'|'MIC_PERMISSION_DENIED'|'UNKNOWN'
+
+export type CallError={
+    code:CallErrorCode
+    sipStatus?:SipStatus   // the SIP status at the time - the cause, for SIP_NOT_READY and INCOMING_TIMEOUT
+}
 
 const PENDING_INVITE_TIMEOUT_MS = 5000;
 const PENDING_SIP_WAKE_TIMEOUT_MS = 20000;
@@ -101,14 +115,20 @@ class CallService extends EventEmitter{
     private pendingCall:PendingCall|undefined
     private pendingCallTimeout:number|undefined
 
-    private pendingOutgoingCall:PendingOutgoingCall|undefined
+    private pendingOutgoingCall:PendingCall|undefined
     private pendingOutgoingCallTimeout:number|undefined
 
     private focusedCallUUID:string|undefined
 
     public appState:AppStateStatus=AppState.currentState
 
+    // On Android the permission dialog sends the app to 'background'; that is
+    // our own dialog, not the user leaving, so SIP must stay up through it.
+    private requestingMicPermission:boolean=false
+
     public sipServiceInitFailed:boolean=false
+
+    public sipStatus:SipStatus={state:'idle'}
 
     private sdkConfig?: VoipSdkConfig;
     private sipSession?: SipSession;
@@ -160,10 +180,10 @@ class CallService extends EventEmitter{
                 const prompts=promptsInstance.getPrompts()
                 
                 Alert.alert(prompts.initialPermissions.title, prompts.initialPermissions.body, [
-                    {text: prompts.initialPermissions.buttons.cancel, style: 'cancel'},
+                    {text: prompts.initialPermissions.buttons.cancel, style: 'cancel', onPress: () => resolve(false)},
                     {text: prompts.initialPermissions.buttons.ok, onPress: async () => {
-                        const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
-                        if (!granted) {
+                        const result=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
+                        if (result!==PermissionsAndroid.RESULTS.GRANTED) {
                             resolve(false);
                             return;
                         }
@@ -175,12 +195,36 @@ class CallService extends EventEmitter{
         })
     }
 
+    // Answering can happen from the lock screen, where no dialog can be shown,
+    // so this only checks. iOS 'prompt' is fine: iOS asks by itself when audio starts.
+    async hasMicPermission():Promise<boolean>{
+        if (Platform.OS==='ios') {
+            return (await permissions.query({name:'microphone'}))!=='denied'
+        }
+        return PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
+    }
+
+    // Checked before every call: Android's ConnectionService silently drops a
+    // call started without RECORD_AUDIO. Asks when Android still allows it.
+    async requestMicPermission():Promise<boolean>{
+        if (Platform.OS==='ios') {
+            return (await permissions.request({name:'microphone'}))===true
+        }
+        if (await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)) {
+            return true
+        }
+        this.requestingMicPermission=true
+        try {
+            const result=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO)
+            return result===PermissionsAndroid.RESULTS.GRANTED
+        } finally {
+            this.requestingMicPermission=false
+        }
+    }
+
     async start(config: VoipSdkConfig){
 
-        const granted=await this.getAudioRecordPermission()
-        if (!granted) {
-            return false
-        }
+        await this.getAudioRecordPermission()
         this.sdkConfig = config;
         // A push token may have arrived before the config was set; flush it now.
         this.notificationService.deliverPushToken();
@@ -246,7 +290,7 @@ class CallService extends EventEmitter{
                 this.sipClient.init()
             }
             if (this.appState.match(/active/) && nextAppState === 'background') {
-                this.callStore.callUUIDMap.size===0 && this.stopCallService()
+                this.callStore.callUUIDMap.size===0 && !this.requestingMicPermission && this.stopCallService()
             }
             this.appState = nextAppState;
         });
@@ -270,6 +314,38 @@ class CallService extends EventEmitter{
         this.callServiceDeviceId = deviceId;
     }
 
+    setSipStatus(status:SipStatus){
+        const current=this.sipStatus
+        if (current.state===status.state && current.reason===status.reason && current.detail===status.detail) return
+        this.sipStatus=status
+        this.emit('sipStatusChanged',status)
+        this.emitSdkEvent('sipStatus',status)
+        if (this.pendingOutgoingCall && (status.state==='failed'||status.state==='disconnected'||status.state==='idle')) {
+            this.failPendingOutgoingCall(this.pendingOutgoingCall.callUUID)
+        }
+    }
+
+    private clearPendingOutgoingCall(){
+        if (this.pendingOutgoingCallTimeout !== undefined) {
+            BackgroundTimer.clearTimeout(this.pendingOutgoingCallTimeout)
+        }
+        this.pendingOutgoingCall=undefined
+        this.pendingOutgoingCallTimeout=undefined
+    }
+
+    // SIP won't come up for the call waiting on it: give up and say why.
+    private failPendingOutgoingCall(callUUID:string){
+        this.clearPendingOutgoingCall()
+        this.nativePhone?.reportCallEnded(callUUID,'Failed','local')
+        this.emit('callPending',this.pendingCall)
+        this.emitCallError({code:'SIP_NOT_READY', sipStatus:this.sipStatus})
+    }
+
+    emitCallError(error:CallError){
+        this.emit('callError',error)
+        this.emitSdkEvent('callError',error)
+    }
+
     callScreenDisplayed(callUUID:string,handle:string,name:string){
        
         const call=this.callStore.getCallByCallUUID(callUUID);
@@ -291,7 +367,7 @@ class CallService extends EventEmitter{
 
         this.clearPendingCallTimeout()
 
-        this.pendingCall={callUUID,handle,name,isAnswered:false}
+        this.pendingCall={callUUID,handle,name,isAnswered:false,callDirection:'incoming'}
         this.armPendingCallTimeout(
             callUUID,
             this.sipClient.isRegistered ? PENDING_INVITE_TIMEOUT_MS : PENDING_SIP_WAKE_TIMEOUT_MS,
@@ -315,7 +391,7 @@ class CallService extends EventEmitter{
             if (!this.pendingCall || this.pendingCall.callUUID !== callUUID) {
                 return
             }
-            this.emit('callFailed')
+            this.emitCallError({code:'INCOMING_TIMEOUT', sipStatus:this.sipStatus})
             this.pendingCall=undefined
             this.nativePhone?.reportCallEnded(callUUID,'Failed','local')
             this.emit('callPending',this.pendingCall)
@@ -327,21 +403,22 @@ class CallService extends EventEmitter{
 
         this.canCall=true;
         this.sipServiceInitFailed=false;
+        this.setSipStatus({state:'registered'})
         if (this.pendingCall) {
             this.armPendingCallTimeout(this.pendingCall.callUUID, PENDING_INVITE_TIMEOUT_MS)
         }
-        if (this.pendingOutgoingCall&& this.pendingOutgoingCallTimeout) {
-           
-            this.startedCall(this.pendingOutgoingCall.handle,this.pendingOutgoingCall.callUUID,this.pendingOutgoingCall.name)
-            BackgroundTimer.clearTimeout(this.pendingOutgoingCallTimeout)
-            this.pendingOutgoingCall=undefined
-            this.pendingOutgoingCallTimeout=undefined
+        if (this.pendingOutgoingCall) {
+            const {handle,callUUID,name}=this.pendingOutgoingCall
+            this.clearPendingOutgoingCall()
+            this.startedCall(handle,callUUID,name)
+            this.emit('callPending',this.pendingCall)
         }
     }
 
-    onSipClientFailed(){
+    onSipClientFailed(reason:SipFailReason, detail?:string){
         this.canCall=false
         this.sipServiceInitFailed=true
+        this.setSipStatus({state:'failed', reason, detail})
         this.emit('sipServiceFailed')
     }
 
@@ -537,15 +614,15 @@ class CallService extends EventEmitter{
         name = name || handle
         if (!this.canCall) {
  
-            this.pendingOutgoingCall={callUUID,handle,name}
-            this.pendingOutgoingCallTimeout= BackgroundTimer.setTimeout(()=>{
-     
-                this.pendingOutgoingCall=undefined
-                this.pendingOutgoingCallTimeout=undefined
-                this.nativePhone?.reportCallEnded(callUUID,'Failed','local')
-            },5000);
+            // Waits for SIP: placed on 'registered', ended on failed/disconnected/idle.
+            this.pendingOutgoingCall={callUUID,handle,name,isAnswered:false,callDirection:'outgoing'}
+            // Backstop for when SIP reports nothing at all (e.g. the credentials request hangs).
+            this.pendingOutgoingCallTimeout=BackgroundTimer.setTimeout(()=>{
+                this.pendingOutgoingCall?.callUUID===callUUID && this.failPendingOutgoingCall(callUUID)
+            },PENDING_SIP_WAKE_TIMEOUT_MS)
+            this.emit('callPending',this.pendingOutgoingCall)
 
-            this.sipClient.init()
+            void this.sipClient.registerClient()
 
 
             return
@@ -555,7 +632,16 @@ class CallService extends EventEmitter{
         let extraCallData=this.extraCallData?.callUUID === callUUID ? this.extraCallData.callData : undefined
         let sipHandle = this.specialHandleCall?.callUUID=== callUUID ? this.specialHandleCall.handle : handle
 
-        const session= this.sipClient.startCall(sipHandle,extraCallData);
+        let session
+        try {
+            session= this.sipClient.startCall(sipHandle,extraCallData);
+        } catch (error) {
+            console.log('startCall error', error)
+            this.specialHandleCall=null;
+            this.nativePhone?.reportCallEnded(callUUID,'Failed','local')
+            this.emitCallError({code: error instanceof TypeError ? 'INVALID_NUMBER' : 'UNKNOWN'})
+            return
+        }
         
         const newCall:Call= {
             sessionId:session._request.call_id,
@@ -595,10 +681,38 @@ class CallService extends EventEmitter{
     }
 
 
+    // A new call only when there is no call at all: none in the store, and no
+    // incoming call announced by push still waiting for its INVITE.
+    canStartCall(){
+        return this.callStore.callUUIDMap.size===0 && !this.pendingCall && !this.pendingOutgoingCall
+    }
+
+    // A second call only next to one call that is established.
+    canAddCall(){
+        const calls=this.callStore.getAllCalls()
+        return calls.length===1 && calls[0].callStatus==='established'
+    }
+
+    async startCall(handle:string, name?:string, calldata?:string){
+        if (!this.canStartCall()) return
+        if (!(await this.requestMicPermission())) {
+            this.emitCallError({code:'MIC_PERMISSION_DENIED'})
+            return
+        }
+        if (!this.canStartCall()) return   // a call arrived while we waited
+        this.makeCall(handle,name,calldata)
+    }
+
+    addCall(handle:string, name?:string, calldata?:string){
+        if (!this.canAddCall()) return
+        this.makeCall(handle,name,calldata)
+    }
+
     makeCall(handle:string, name?:string, calldata?:string){
 
-        if (!this.canCall) {        
-            this.emit('outgoingCallFailed')
+        // connecting/idle: start anyway, startedCall waits for SIP.
+        if (this.sipStatus.state==='failed' || this.sipStatus.state==='disconnected') {
+            this.emitCallError({code:'SIP_NOT_READY', sipStatus:this.sipStatus})
             return
         }
         const callUUID= getNewUuid();
@@ -647,7 +761,13 @@ class CallService extends EventEmitter{
     }
 
 
-    answeredCall(callUUID:string){
+    async answeredCall(callUUID:string){
+
+        if (!(await this.hasMicPermission())) {
+            this.nativePhone?.endCall(callUUID)
+            this.emitCallError({code:'MIC_PERMISSION_DENIED'})
+            return
+        }
 
         if (this.pendingCall&& this.pendingCall.callUUID===callUUID) {
             this.pendingCall.isAnswered=true
@@ -667,6 +787,10 @@ class CallService extends EventEmitter{
 
     terminateCall(){
 
+        if (this.pendingOutgoingCall) {
+            this.nativePhone?.endCall(this.pendingOutgoingCall.callUUID)
+            return
+        }
 
         if(!this.focusedCallUUID){
             this.nativePhone?.clear()
@@ -679,6 +803,12 @@ class CallService extends EventEmitter{
 
     endCallByUUID(callUUID:string){
 
+        // Cancelled while waiting for SIP: nothing was dialled yet.
+        if (this.pendingOutgoingCall?.callUUID===callUUID) {
+            this.clearPendingOutgoingCall()
+            this.emit('callPending',this.pendingCall)
+            return
+        }
 
         if (this.pendingCallTimeout&& this.pendingCall&& this.pendingCall.callUUID===callUUID) {
             this.pendingCall=undefined

@@ -196,7 +196,7 @@ class NativePhone{
 
         if (!obj.callUUID) {
 
-            if (this.callService.callStore.getAllCalls().length>0) {
+            if (!this.callService.canStartCall()) {
                 return;
             }
 
