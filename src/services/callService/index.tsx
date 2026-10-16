@@ -306,6 +306,7 @@ class CallService extends EventEmitter{
         this.sipClient.removeCredentials()
         this.sdkConfig = undefined;
         this.sipSession = undefined;
+        this.callServiceDeviceId = undefined;
         void clearSipSession();
     }
 
