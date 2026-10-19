@@ -52,6 +52,12 @@ class NotificationService {
         }
     }
 
+    // Sign-out unregisters the token on the backend, so the next start() has
+    // to deliver it again even though it's the same token.
+    forgetDeliveredToken(){
+        this.deliveredToken = null;
+    }
+
 
     registerVoipListeners() {
             VoipPushNotification.addEventListener('register', (token) => {

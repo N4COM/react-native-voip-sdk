@@ -7,6 +7,7 @@ declare class NotificationService {
     init(): void;
     registerPushToken(pushToken: string): Promise<void>;
     deliverPushToken(): Promise<void>;
+    forgetDeliveredToken(): void;
     registerVoipListeners(): void;
     destroy(): void;
     registerAndroid(): Promise<void>;

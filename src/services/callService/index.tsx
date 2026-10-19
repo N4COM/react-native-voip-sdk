@@ -307,6 +307,7 @@ class CallService extends EventEmitter{
         this.sdkConfig = undefined;
         this.sipSession = undefined;
         this.callServiceDeviceId = undefined;
+        this.notificationService.forgetDeliveredToken();
         void clearSipSession();
     }
 
