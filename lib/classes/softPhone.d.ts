@@ -1,3 +1,4 @@
+import '../webrtcGlobals';
 declare class SoftPhone {
     ownerID: any;
     password: any;

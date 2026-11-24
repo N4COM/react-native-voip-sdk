@@ -1,4 +1,5 @@
-// @ts-ignore TS(7016): the pinned jssip fork may or may not ship type declarations
+// Must stay above the jssip import: it registers the WebRTC globals JsSIP needs.
+import '../webrtcGlobals';
 import JsSIP from 'jssip';
 
 class SoftPhone{
