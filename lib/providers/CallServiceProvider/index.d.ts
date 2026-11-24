@@ -2,6 +2,7 @@ import React from "react";
 import { Call, PendingCall } from "../../services/callService";
 import { PromptsType } from "../../prompts";
 export type TransferType = 'blind' | 'attended';
+/** @deprecated The SDK no longer collects analytics. Kept so existing callers still compile. */
 export type AnalyticsOptions = {
     isEnabled: true;
     userId: string;
@@ -26,6 +27,7 @@ interface CallServiceContext {
     callServiceSipInitFailed: boolean;
     initiateCallService: (token: string, isDev?: boolean) => void;
     setPermissionsPrompts: (prompts: PromptsType) => void;
+    /** @deprecated Does nothing: the SDK no longer collects analytics. Remove the call. */
     enableAnalytics: (options: AnalyticsOptions) => void;
 }
 declare const CallServiceContext: React.Context<CallServiceContext | null>;

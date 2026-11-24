@@ -38,9 +38,6 @@
         "crypto-js": "^4.2.0",
         "eventemitter3": "^5.0.1",
         "jssip": "^3.13.0",
-        "posthog-react-native": "^4.12.0",
-        "react-native-device-info": "^15.0.1",
-        "react-native-localize": "^3.6.0",
         "react-native-uuid": "^2.0.3"
     },
     "devDependencies": {

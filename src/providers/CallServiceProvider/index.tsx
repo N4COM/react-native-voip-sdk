@@ -7,6 +7,7 @@ import promptsInstance, { PromptsType } from "../../prompts";
 
 
 export type TransferType='blind'|'attended';
+/** @deprecated The SDK no longer collects analytics. Kept so existing callers still compile. */
 export type AnalyticsOptions={
     isEnabled:true,
     userId:string,
@@ -31,6 +32,7 @@ interface CallServiceContext{
     callServiceSipInitFailed:boolean;
     initiateCallService:(token:string , isDev?:boolean)=>void;
     setPermissionsPrompts:(prompts:PromptsType)=>void;
+    /** @deprecated Does nothing: the SDK no longer collects analytics. Remove the call. */
     enableAnalytics:(options : AnalyticsOptions)=>void;
 }
 
@@ -129,16 +131,9 @@ const CallServiceProvider= ({children}:{children:React.ReactNode}) => {
     }
 
 
-    const enableAnalytics=(options:AnalyticsOptions)=>{
-        if (options.isEnabled) {
-            callService.analyticsService.enableAnalytics(true);
-            callService.analyticsService.identify(options.userId, options.properties);
-        }
-        else {
-            callService.analyticsService.enableAnalytics(false);
-            callService.analyticsService.resetAnalytics();
-        }
-    }
+    // Analytics was removed from the SDK. This stays as a no-op so apps that
+    // still call it keep working; it can go in the next breaking release.
+    const enableAnalytics=(_options:AnalyticsOptions)=>{}
 
     const stopCallService=()=>{
         callService.stopCallService();

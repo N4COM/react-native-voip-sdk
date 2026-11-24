@@ -182,7 +182,6 @@ class NativePhone{
         
         name ?? this.callStartingMap.delete(obj.callUUID);
 
-        this.callService.analyticsService.trackEvent('onNativeCallStart',{callUUID:obj.callUUID, handle:obj.handle, name:obj.name});
     }
 
     onNativeCallAnswer(callUUID:string){
@@ -200,27 +199,14 @@ class NativePhone{
             // this.callService.reportCallError(error);
       }
 
-      this.callService.analyticsService.trackEvent('answeredCall',{callUUID:callUUID});
 
     }
 
     onNativeCallEnd(callUUID:string){
         this.callService.endCallByUUID(callUUID);
-        this.callService.analyticsService.trackEvent('onNativeCallEnd',{callUUID:callUUID});
     }
 
     onNativeCallLoad(events:{name:string,data:any}[]){
-        
-        const eventSummary = {
-            count: events.length,
-            eventTypes: events.map(ev => ev.name),
-            callUUIDs: events
-                .map(ev => ev.data?.callUUID)
-                .filter(Boolean)
-        };
-        
-        this.callService.analyticsService.trackEvent('loadedEvents', eventSummary);
-    
 
         let endedCallsUUID= events.map((ev: {name:string,data:any}) => {
           if (ev.name==='RNCallKeepPerformEndCallAction') {
@@ -279,7 +265,6 @@ class NativePhone{
     onNativeCallDisplay(event:any){
 
         this.callService.callScreenDisplayed(event.callUUID,event.handle,event.localizedCallerName);
-        this.callService.analyticsService.trackEvent('callScreenDisplayed',{callUUID:event.callUUID, handle:event.handle, name:event.localizedCallerName});
     }  
 
     setEstablishedCall(callUUID:string){
@@ -299,7 +284,6 @@ class NativePhone{
             this.onNativeCallDisplay({callUUID, handle, localizedCallerName:name, hasVideo:false, fromPushKit:null, payload:null });
         }
 
-        this.callService.analyticsService.trackEvent('showIncomingCall',{callUUID, handle, name});
       
     }  
 
@@ -309,12 +293,10 @@ class NativePhone{
         const causeCode= parseCauseCode(cause);
         RNCallKeep.reportEndCallWithUUID(callUUID,causeCode);
 
-        this.callService.analyticsService.trackEvent('reportCallEnded',{callUUID, cause, originator});
     }
 
     androidEndCallHandler(payload:any){
         RNCallKeep.endCall(payload.uuid);
-        this.callService.analyticsService.trackEvent('androidEndCallHandler',{callUUID:payload.uuid});
     }
 
     androidAnswerCallHandler(payload:any){
@@ -359,13 +341,11 @@ class NativePhone{
         RNCallKeep.updateDisplay(callUUID, name, handle);
         RNCallKeep.reportConnectingOutgoingCallWithUUID(callUUID);
         this.callStartingMap.set(callUUID,name);
-        this.callService.analyticsService.trackEvent('startCall',{callUUID, handle, name});
     }
 
     endCall(callUUID:string){
    
         RNCallKeep.endCall(callUUID);
-        this.callService.analyticsService.trackEvent('endCall',{callUUID});
     }
 
     holdCall(callUUID:string,hold:boolean){
